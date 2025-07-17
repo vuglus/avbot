@@ -4,4 +4,3 @@ logging
 python-telegram-bot
 yandex_cloud_ml_sdk
 yandex_speechkit
-tempfile

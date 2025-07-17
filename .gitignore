@@ -1,2 +1,7 @@
 .env
-avbotvenv/
+avbotvenv
+uploads
+transcripts
+__pycache__
+test.mp3
+test.sh
