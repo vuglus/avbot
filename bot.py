@@ -92,15 +92,11 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
             temp_path = temp_file.name
 
         # Конвертируем и распознаём
-        wav_path = temp_path + ".wav"
+        wav_path = temp_path + ".mp3"
         sound = AudioSegment.from_mp3(temp_path).set_frame_rate(16000).set_channels(1)
-        sound.export(wav_path, format="wav")
+        sound.export(wav_path, format="mp3")
 
-        transcript = recognize_speech(
-            filepath=wav_path,
-            api_key=YCLOUD_API_KEY,
-            folder_id=YCLOUD_FOLDER_ID
-        )
+        transcript = 'not implemented'
 
         logger.info(f"Распознанный текст из аудио: {transcript}")
 
