@@ -10,7 +10,7 @@ from handlers.base_handler import BaseHandler
 class DocumentHandler(BaseHandler):
     """Handle document attachments"""
     
-    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_input = update.message.text or update.message.caption or ""
         self.logger.info(f"Received message with document: {user_input}")
         file_text = ""

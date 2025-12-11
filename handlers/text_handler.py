@@ -8,7 +8,7 @@ from handlers.base_handler import BaseHandler
 class TextHandler(BaseHandler):
     """Handle text messages"""
     
-    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_input = update.message.text or update.message.caption or ""
         self.logger.info(f"Received text message: {user_input}")
         

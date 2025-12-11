@@ -9,7 +9,7 @@ from handlers.base_handler import BaseHandler
 class AudioHandler(BaseHandler):
     """Handle audio files"""
     
-    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             # Process audio and get transcript
             transcript = await process_audio(update, context)

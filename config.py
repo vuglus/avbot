@@ -11,6 +11,13 @@ config = load_config()
 
 # Bot configuration
 BOT_TOKEN = config['bot']['token']
+BOT_WHITELIST = config['bot'].get('whitelist', '')
+
+# Parse whitelist into a set of integers
+if BOT_WHITELIST:
+    WHITELIST = {int(uid.strip()) for uid in BOT_WHITELIST.split(',') if uid.strip().isdigit()}
+else:
+    WHITELIST = set()
 
 # Yandex Cloud configuration
 YCLOUD_API_KEY = config['ycloud']['api_key']
