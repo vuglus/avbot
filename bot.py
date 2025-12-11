@@ -1,131 +1,33 @@
-import os
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-from yandex_cloud_ml_sdk import YCloudML
-from speech import recognize_speech
-from pydub import AudioSegment
-import tempfile
 import logging
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from config import BOT_TOKEN
+from handlers.start_handler import StartHandler
+from handlers.text_handler import TextHandler
+from handlers.document_handler import DocumentHandler
+from handlers.audio_handler import AudioHandler
 
-# Загружаем переменные окружения
-load_dotenv()
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-YCLOUD_API_KEY = os.getenv("YCLOUD_API_KEY")
-YCLOUD_FOLDER_ID = os.getenv("YCLOUD_FOLDER_ID")
-SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT")
-
-
-# Инициализация YCloudML
-sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
-model = sdk.models.completions("yandexgpt", model_version="rc").configure(temperature=0.3)
-
-# Запрос к YandexGPT через YCloudML
-def ask_yandexgpt(prompt: str) -> str:
-    result = model.run([
-        {"role": "system", "text": SYSTEM_PROMPT},
-        {"role": "user", "text": prompt}
-    ])
-    
-    if result and result.alternatives:
-        return result.alternatives[0].text
-    else:
-        return "Ответ от YandexGPT пустой или в неожиданном формате."
-
-
-# 🚀 Обработка сообщений с текстом и, возможно, прикреплённым текстовым файлом
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_input = update.message.text or update.message.caption or ""
-    logger.info(f"Получено сообщение: {user_input}")
-    file_text = ""
-
-    # Есть ли документ?
-    if update.message.document:
-        document = update.message.document
-        file_name = document.file_name.lower()
-        logger.info(f"Обнаружен файл: {file_name} Тип документа: {update.message.document.mime_type}")
-
-        try:
-            file = await document.get_file()
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                await file.download_to_drive(custom_path=temp_file.name)
-                temp_path = temp_file.name
-
-            if file_name.endswith(".txt"):
-                with open(temp_path, "r", encoding="utf-8") as f:
-                    file_text = f.read()
-                    logger.info(f"Файл .txt прочитан, длина текста: {len(file_text)} символов")
-
-            else:
-                await update.message.reply_text("Поддерживаются только файлы .txt и .mp3")
-                return
-
-        except Exception as e:
-            logger.error(f"Ошибка при обработке файла: {str(e)}")
-            await update.message.reply_text("Не удалось обработать файл.")
-            return
-    # Объединяем текст запроса и файл
-    full_prompt = user_input.strip()
-    if file_text:
-        full_prompt += "\n\n" + file_text.strip()
-
-    logger.info(f"Собранный prompt (длина: {len(full_prompt)}):\n{full_prompt[:200]}...")
-
-    try:
-        reply = ask_yandexgpt(full_prompt)
-        logger.info("Получен ответ от YandexGPT")
-        await update.message.reply_text(reply)
-    except Exception as e:
-        logger.error(f"Ошибка при обращении к YandexGPT: {str(e)}")
-        await update.message.reply_text(f"Ошибка при обращении к YandexGPT: {str(e)}")
-
-async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    audio = update.message.audio
-    file_name = audio.file_name or "audio.mp3"
-    logger.info(f"Получен аудиофайл: {file_name}")
-
-    try:
-        file = await audio.get_file()
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            await file.download_to_drive(custom_path=temp_file.name)
-            temp_path = temp_file.name
-
-        # Конвертируем и распознаём
-        wav_path = temp_path + ".mp3"
-        sound = AudioSegment.from_mp3(temp_path).set_frame_rate(16000).set_channels(1)
-        sound.export(wav_path, format="mp3")
-
-        transcript = 'not implemented'
-
-        logger.info(f"Распознанный текст из аудио: {transcript}")
-
-        reply = ask_yandexgpt(transcript)
-        await update.message.reply_text(reply)
-
-    except Exception as e:
-        logger.error(f"Ошибка при обработке аудио: {str(e)}")
-        await update.message.reply_text("Не удалось обработать аудиофайл.")
-
-# Команда /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Напиши мне что-нибудь, и я задам это YandexGPT через YCloudML.")
-
-# Настраиваем логи
+# Set up logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Запуск бота
+# Build and run the bot
 if __name__ == '__main__':    
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+    
+    # Create handler instances
+    start_handler = StartHandler()
+    text_handler = TextHandler()
+    document_handler = DocumentHandler()
+    audio_handler = AudioHandler()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.Document.ALL, handle_message))  # обработка сообщений с вложениями
-    app.add_handler(MessageHandler(filters.AUDIO, handle_audio)) 
+    # Register handlers
+    app.add_handler(CommandHandler("start", start_handler.handle))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler.handle))
+    app.add_handler(MessageHandler(filters.Document.ALL, document_handler.handle))
+    app.add_handler(MessageHandler(filters.AUDIO, audio_handler.handle))
 
     print("Бот запущен...")
     app.run_polling()

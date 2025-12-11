@@ -1,0 +1,13 @@
+# Telegram bot settings
+bot:
+  token: 
+yandex:
+  system_prompt:
+  speech_api_key: 
+ycloud:
+  api_key: 
+  folder_id: 
+s3: 
+  access_key:
+  secret_key:
+  bucket_name:
