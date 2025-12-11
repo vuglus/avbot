@@ -1,6 +1,6 @@
 import logging
 from yandex_cloud_ml_sdk import YCloudML
-from config import YCLOUD_API_KEY, YCLOUD_FOLDER_ID, SYSTEM_PROMPT
+from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID, SYSTEM_PROMPT
 
 # Initialize logger
 logger = logging.getLogger(__name__)

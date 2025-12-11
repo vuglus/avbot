@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from pydub import AudioSegment
 from speech import recognize_speech
-from config import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
+from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
 
 # Initialize logger
 logger = logging.getLogger(__name__)

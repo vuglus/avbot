@@ -1,5 +1,5 @@
 from telegram import Update
-from config import WHITELIST
+from services.config_service import WHITELIST
 
 
 class AuthService:
@@ -23,4 +23,5 @@ class AuthService:
     @staticmethod
     async def send_unauthorized_message(update: Update):
         """Send unauthorized access message to user"""
-        await update.message.reply_text("Извините, у вас нет доступа к этому боту.")
+        await update.message.reply_text("Извините, у вас нет доступа к этому боту. Уточните свой ИД у бота (https://t.me/userinfobot) и пришлите его @avinogradov")
+        

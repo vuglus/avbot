@@ -1,6 +1,6 @@
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from config import BOT_TOKEN
+from services.config_service import BOT_TOKEN
 from handlers.start_handler import StartHandler
 from handlers.text_handler import TextHandler
 from handlers.document_handler import DocumentHandler
