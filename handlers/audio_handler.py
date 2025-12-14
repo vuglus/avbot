@@ -2,7 +2,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from speech_service import process_audio
-from yandexgpt_service import ask_yandexgpt
+from services.yandexgpt_service import ask_yandexgpt
 from handlers.base_handler import BaseHandler
 
 

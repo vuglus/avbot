@@ -11,11 +11,11 @@ config = load_config()
 
 # Bot configuration
 BOT_TOKEN = config['bot']['token']
-BOT_WHITELIST = config['bot'].get('whitelist', '')
+BOT_WHITELIST = config['bot'].get('whitelist', [])
 
 # Parse whitelist into a set of integers
 if BOT_WHITELIST:
-    WHITELIST = {int(uid.strip()) for uid in BOT_WHITELIST.split(',') if uid.strip().isdigit()}
+    WHITELIST = {int(uid) for uid in BOT_WHITELIST if str(uid).isdigit()}
 else:
     WHITELIST = set()
 
@@ -24,6 +24,9 @@ YCLOUD_API_KEY = config['ycloud']['api_key']
 YCLOUD_FOLDER_ID = config['ycloud']['folder_id']
 SYSTEM_PROMPT = config['yandex']['system_prompt']
 SPEECH_API_KEY = config['yandex']['speech_api_key']
+SYSTEM_MODEL = config['yandex']['model']
+INDEX_KEYS = config['yandex'].get('index', [])
+BOT_KEY = config['yandex']['key']
 
 # S3 configuration
 S3_ACCESS_KEY = config['s3']['access_key']

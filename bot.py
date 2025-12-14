@@ -5,6 +5,7 @@ from handlers.start_handler import StartHandler
 from handlers.text_handler import TextHandler
 from handlers.document_handler import DocumentHandler
 from handlers.audio_handler import AudioHandler
+from handlers.topic_handler import TopicHandler
 
 # Set up logging
 logging.basicConfig(
@@ -14,7 +15,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Build and run the bot
-if __name__ == '__main__':    
+if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
     # Create handler instances
@@ -22,9 +23,11 @@ if __name__ == '__main__':
     text_handler = TextHandler()
     document_handler = DocumentHandler()
     audio_handler = AudioHandler()
+    topic_handler = TopicHandler()
 
     # Register handlers
     app.add_handler(CommandHandler("start", start_handler.handle))
+    app.add_handler(CommandHandler("topic", topic_handler.handle))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler.handle))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler.handle))
     app.add_handler(MessageHandler(filters.AUDIO, audio_handler.handle))

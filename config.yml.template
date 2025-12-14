@@ -1,17 +1,22 @@
 # Telegram bot settings
 bot:
   token: 
-  # Whitelist of authorized user IDs (comma-separated)
-  # Example: whitelist: "123456789,987654321"
-  whitelist: 
+  # Whitelist of authorized user IDs (list format)
+  # Example: whitelist: [123456789, 987654321]
+  whitelist: []
 
 yandex:
   system_prompt:
-  speech_api_key: 
+  speech_api_key:  
+  model: ----
+  index: 
+   - index1
+   - index2
+  key: ----
 
 ycloud:
-  api_key: 
-  folder_id: 
+  api_key:
+  folder_id:
 
 s3: 
   access_key:
