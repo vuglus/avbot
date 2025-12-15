@@ -1,7 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from speech_service import process_audio
+from services.speech_service import process_audio
 from services.yandexgpt_service import ask_yandexgpt
 
 # Initialize logger

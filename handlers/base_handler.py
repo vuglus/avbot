@@ -21,6 +21,9 @@ class BaseHandler:
         # Call the actual handler implementation
         await self.handle_authorized(update, context)
     
+    async def handle_unauthorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.handle_unauthorized(update, context)
+    
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handler method to be implemented by subclasses for authorized users"""
         raise NotImplementedError("Handler method must be implemented by subclass")

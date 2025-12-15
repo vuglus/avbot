@@ -12,6 +12,7 @@ config = load_config()
 # Bot configuration
 BOT_TOKEN = config['bot']['token']
 BOT_WHITELIST = config['bot'].get('whitelist', [])
+BOT_WELCOME = config['bot']['welcome']
 
 # Parse whitelist into a set of integers
 if BOT_WHITELIST:
@@ -32,3 +33,4 @@ BOT_KEY = config['yandex']['key']
 S3_ACCESS_KEY = config['s3']['access_key']
 S3_SECRET_KEY = config['s3']['secret_key']
 S3_BUCKET_NAME = config['s3']['bucket_name']
+

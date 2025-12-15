@@ -26,11 +26,11 @@ if __name__ == '__main__':
     topic_handler = TopicHandler()
 
     # Register handlers
-    app.add_handler(CommandHandler("start", start_handler.handle))
+    app.add_handler(CommandHandler("start", start_handler.handle_unauthorized))
     app.add_handler(CommandHandler("topic", topic_handler.handle))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler.handle))
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler.handle))
-    app.add_handler(MessageHandler(filters.AUDIO, audio_handler.handle))
+    app.add_handler(MessageHandler(filters.AUDIO | filters.VOICE, audio_handler.handle))
 
     print("Бот запущен...")
     app.run_polling()
