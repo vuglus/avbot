@@ -8,7 +8,7 @@ def recognize_speech(filepath: str, api_key: str, folder_id: str, lang: str = 'r
 
     headers = {
         'Authorization': f'Api-Key {api_key}',
-        'Content-Type': 'audio/x-wav'
+        'Content-Type': 'audio/ogg'
     }
 
     params = {
