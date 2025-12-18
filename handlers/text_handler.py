@@ -22,7 +22,7 @@ class TextHandler(BaseHandler):
         
         try:
             reply = ask_yandexgpt_with_context(user_input, dialog_context)
-            self.logger.info("Received response from YandexGPT")
+            self.logger.info("TextHandler received response from YandexGPT")
             
             # Add assistant message to dialog history
             add_message_to_topic(user_id, {"role": "assistant", "text": reply})

@@ -49,7 +49,7 @@ class DocumentHandler(BaseHandler):
 
         try:
             reply = ask_yandexgpt(full_prompt)
-            self.logger.info("Received response from YandexGPT")
+            self.logger.info("DocumentHandler received response from YandexGPT")
             await update.message.reply_text(reply)
         except Exception as e:
             self.logger.error(f"Error calling YandexGPT: {str(e)}")

@@ -1,73 +1,94 @@
 import logging
 import openai
-from json import dumps
+import json
 from services.config_service import BOT_KEY, YCLOUD_FOLDER_ID, SYSTEM_PROMPT, SYSTEM_MODEL, INDEX_KEYS
+from services.tools_service import _prepare_tools, call_mcp_tool
+from clients.yandexgpt import YandexGPClient
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
 # Initialize OpenAI client for Yandex Cloud
-client = openai.OpenAI(
-    api_key=BOT_KEY,
-    base_url="https://rest-assistant.api.cloud.yandex.net/v1",
-    project=YCLOUD_FOLDER_ID,
-)
-
-def _prepare_tools():
-    """Prepare tools for YandexGPT request"""
-    tools = []
-    if INDEX_KEYS:
-        tools.append({
-            "type": "file_search",
-            "vector_store_ids": INDEX_KEYS,
-        })
-    return tools
+client = YandexGPClient()
 
 def _make_yandexgpt_request(prompt: str, tools=None) -> str:
     """Make a request to YandexGPT through OpenAI library"""
     try:
-        response = client.responses.create(
-            model=f"gpt://{YCLOUD_FOLDER_ID}/{SYSTEM_MODEL}",
-            instructions=SYSTEM_PROMPT,
-            tools=tools if tools else None,
-            input=prompt,
-        )
+        logger.info(f"Making YandexGPT request with prompt: {prompt}")
         
-        return response.output_text
+        # Initial request to YandexGPT
+        response = client.request(prompt, tools)
+
+        if response.status != 'completed':
+            logger.error(f"Error calling YandexGPT: {response!r}")
+            return f"Ошибка при обращении к YandexGPT: {response.error.message}"
+        
+        logger.info(f"Success: {response!r}.")
+
+        # 1. Ищем tool_call в response.output
+        tool_calls = [
+            item for item in response.output
+            if item.type == "function_call"
+        ]
+
+        if tool_calls:
+            # 2. Берем первый tool_call
+            tool_call = tool_calls[0]
+            tool_name = tool_call.name          # атрибут name
+            args = json.loads(tool_call.arguments)  # arguments хранится как JSON строка
+
+            logger.info(f"Model wants to call tool: {tool_name} with args: {args}")
+
+            # 3. Вызываем MCP
+            tool_result = call_mcp_tool(tool_name, args)
+
+            # 4. Отдаем результат обратно модели
+            
+            final_response = client.request([
+                {"role": "user", "content": prompt},
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,  # ВАЖНО: id, не name
+                    "content": json.dumps(tool_result, ensure_ascii=False),
+                },
+            ])
+
+            return final_response.output_text
+        else:
+            # 5. Tool не нужен — обычный ответ
+            return response.output_text
     except Exception as e:
         logger.error(f"Error calling YandexGPT: {str(e)}")
         return f"Ошибка при обращении к YandexGPT: {str(e)}"
 
 def ask_yandexgpt(prompt: str) -> str:
     """Request to YandexGPT through OpenAI library"""
-    tools = _prepare_tools()
+    tools = _prepare_tools(INDEX_KEYS)
     return _make_yandexgpt_request(prompt, tools)
 
 def ask_yandexgpt_with_context(prompt: str, dialog_context: list) -> str:
     """Request to YandexGPT with dialog context through OpenAI library"""
     try:
-        # For the responses.create API, we need to pass the context differently
-        # Build the full context including system prompt and dialog history
-        # Convert dialog context to a single string prompt with context
-        context_parts = []
+        # For the chat.completions.create API, we need to pass the context as messages
+        messages = []
         
         # Add dialog history
         for msg in dialog_context:
             role = msg.get("role", "user")
             text = msg.get("text", "") if "text" in msg else msg.get("content", "")
-            context_parts.append(f"{role}: {text}")
+            messages.append({"role": role, "content": text})
         
-        # Combine all context with the new prompt
-        full_prompt = "\n".join(context_parts) + f"\nuser: {prompt}" if context_parts else prompt
+        # Add the new user prompt
+        messages.append({"role": "user", "content": prompt})
         
-        # Prepare tools if we have index keys
-        tools = _prepare_tools()
-        logger.error(f"full_prompt: {full_prompt}")
+        # Prepare tools
+        tools = _prepare_tools(INDEX_KEYS)
+        logger.info(f"Making YandexGPT request with context: {messages}")
         
         # Make the request to Yandex Cloud through OpenAI library
-        response = _make_yandexgpt_request(full_prompt, tools)
+        response = _make_yandexgpt_request(prompt, tools)
         
         return response
     except Exception as e:
-        logger.error(f"Error calling YandexGPT with context: {str(e)}: {full_prompt}")
-        return f"Ошибка при обращении к YandexGPT: {str(e)}: {full_prompt}"
+        logger.error(f"Error calling YandexGPT with context: {str(e)}")
+        return f"Ошибка при обращении к YandexGPT: {str(e)}"

@@ -6,7 +6,6 @@ from telegram.ext import ContextTypes
 from services.yandexgpt_service import ask_yandexgpt
 from handlers.base_handler import BaseHandler
 
-
 class DocumentHandler(BaseHandler):
     """Handle document attachments"""
     
@@ -49,7 +48,7 @@ class DocumentHandler(BaseHandler):
 
         try:
             reply = ask_yandexgpt(full_prompt)
-            self.logger.info("Received response from YandexGPT")
+            self.logger.info("DocumentHandler received response from YandexGPT")
             await update.message.reply_text(reply)
         except Exception as e:
             self.logger.error(f"Error calling YandexGPT: {str(e)}")

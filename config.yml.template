@@ -23,3 +23,7 @@ s3:
   access_key:
   secret_key:
   bucket_name:
+
+# MCP server configuration for b2b-inn-check
+mcp:
+  b2b_inn_check_url: https://db8dpojigk9h3car4mhs.58zke0qh.mcpgw.serverless.yandexcloud.net/sse

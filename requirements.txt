@@ -6,3 +6,4 @@ yandex_cloud_ml_sdk
 yandex_speechkit
 pyyaml
 openai
+yandex-cloud

@@ -34,3 +34,5 @@ S3_ACCESS_KEY = config['s3']['access_key']
 S3_SECRET_KEY = config['s3']['secret_key']
 S3_BUCKET_NAME = config['s3']['bucket_name']
 
+# MCP configuration
+MCP_B2B_INN_CHECK_URL = config['mcp']['b2b_inn_check_url']

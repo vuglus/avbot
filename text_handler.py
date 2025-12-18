@@ -14,7 +14,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     try:
         reply = ask_yandexgpt(user_input)
-        logger.info("Received response from YandexGPT")
+        logger.info("handle_text_message received response from YandexGPT")
         await update.message.reply_text(reply)
     except Exception as e:
         logger.error(f"Error calling YandexGPT: {str(e)}")
