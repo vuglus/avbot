@@ -4,15 +4,32 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandexgpt_service import ask_yandexgpt
+from services.yandex_index_service import YandexIndexService
+from services.dialog_service import load_user_dialog, save_user_dialog
+from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
+from yandex_cloud_ml_sdk import YCloudML
 from handlers.base_handler import BaseHandler
 
 class DocumentHandler(BaseHandler):
     """Handle document attachments"""
     
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        
+        # Получаем текущий топик пользователя
+        dialog_data = load_user_dialog(user_id)
+        current_topic = dialog_data.get("current_topic", "default")
+        
+        # Формируем имя индекса
+            
+        # Инициализируем YandexIndexService
+        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
+        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
+        index_name = index_service.get_index_name(user_id, current_topic)
+        
+        self.logger.info(f"Using index name: {index_name}")
         user_input = update.message.text or update.message.caption or ""
         self.logger.info(f"Received message with document: {user_input}")
-        file_text = ""
 
         # Check if there's a document
         if update.message.document:
@@ -26,30 +43,21 @@ class DocumentHandler(BaseHandler):
                     await file.download_to_drive(custom_path=temp_file.name)
                     temp_path = temp_file.name
 
-                if file_name.endswith(".txt"):
-                    with open(temp_path, "r", encoding="utf-8") as f:
-                        file_text = f.read()
-                        self.logger.info(f"Text file read, text length: {len(file_text)} characters")
-                else:
-                    await update.message.reply_text("Поддерживаются только файлы .txt и .mp3")
-                    return
-
             except Exception as e:
                 self.logger.error(f"Error processing file: {str(e)}")
                 await update.message.reply_text("Не удалось обработать файл.")
+
+            # Загружаем файл в индекс
+            try:
+                index_id = index_service.upload_file_to_index(temp_path, file_name, index_name)
+                dialog_data.update({"index_id": index_id})                
+                save_user_dialog(user_id, dialog_data)
+                self.logger.info(f"File uploaded and indexed successfully to {index_name}")
+            except Exception as e:
+                self.logger.error(f"Error indexing file: {str(e)}")
+                # Не прерываем основной поток, просто логируем ошибку
                 return
         
-        # Combine request text and file content
-        full_prompt = user_input.strip()
-        if file_text:
-            full_prompt += "\n\n" + file_text.strip()
-
-        self.logger.info(f"Constructed prompt (length: {len(full_prompt)}):\n{full_prompt[:200]}...")
-
-        try:
-            reply = ask_yandexgpt(full_prompt)
-            self.logger.info("DocumentHandler received response from YandexGPT")
-            await update.message.reply_text(reply)
-        except Exception as e:
-            self.logger.error(f"Error calling YandexGPT: {str(e)}")
-            await update.message.reply_text(f"Ошибка: {str(e)}")
+        # После успешной индексации файла отвечаем пользователю
+        await update.message.reply_text(f"Файл: {file_name} успешно загружен и обработан для индексации.")
+        return

@@ -61,10 +61,13 @@ def _prepare_tools(index_keys):
     
     # Add file search tools if we have index keys
     if index_keys:
-        tools.append({
-            "type": "file_search",
-            "vector_store_ids": index_keys,
-        })
+        # Filter out any None or empty values
+        valid_index_keys = [key for key in index_keys if key]
+        if valid_index_keys:
+            tools.append({
+                "type": "file_search",
+                "vector_store_ids": valid_index_keys,
+            })
     
     # # Add MCP tools
     # tools.extend([

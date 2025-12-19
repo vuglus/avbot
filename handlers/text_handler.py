@@ -3,8 +3,10 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandexgpt_service import ask_yandexgpt_with_context
 from handlers.base_handler import BaseHandler
-from services.dialog_service import add_message_to_topic, get_last_messages
-
+from services.dialog_service import add_message_to_topic, get_last_messages, load_user_dialog
+from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
+from services.yandex_index_service import YandexIndexService
+from yandex_cloud_ml_sdk import YCloudML
 
 class TextHandler(BaseHandler):
     """Handle text messages"""
@@ -17,11 +19,20 @@ class TextHandler(BaseHandler):
         # Add user message to dialog history
         add_message_to_topic(user_id, {"role": "user", "text": user_input})
         
+        # Get current topic and index ID
+        dialog_data = load_user_dialog(user_id)
+        current_topic = dialog_data.get("current_topic", "default")
+        
+        # Initialize YandexIndexService to get index ID
+        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
+        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
+        index_id = index_service.get_index_id_for_topic(user_id, current_topic)
+        
         # Get last 15 messages for context
         dialog_context = get_last_messages(user_id, 15)
         
         try:
-            reply = ask_yandexgpt_with_context(user_input, dialog_context)
+            reply = ask_yandexgpt_with_context(user_input, dialog_context, index_id)
             self.logger.info("TextHandler received response from YandexGPT")
             
             # Add assistant message to dialog history

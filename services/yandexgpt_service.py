@@ -61,12 +61,12 @@ def _make_yandexgpt_request(prompt: str, tools=None) -> str:
         logger.error(f"Error calling YandexGPT: {str(e)}")
         return f"Ошибка при обращении к YandexGPT: {str(e)}"
 
-def ask_yandexgpt(prompt: str) -> str:
+def ask_yandexgpt(prompt: str, index_id: str = None) -> str:
     """Request to YandexGPT through OpenAI library"""
-    tools = _prepare_tools(INDEX_KEYS)
+    tools = _prepare_tools([index_id] if index_id else INDEX_KEYS)
     return _make_yandexgpt_request(prompt, tools)
 
-def ask_yandexgpt_with_context(prompt: str, dialog_context: list) -> str:
+def ask_yandexgpt_with_context(prompt: str, dialog_context: list, index_id: str = None) -> str:
     """Request to YandexGPT with dialog context through OpenAI library"""
     try:
         # For the chat.completions.create API, we need to pass the context as messages
@@ -82,7 +82,7 @@ def ask_yandexgpt_with_context(prompt: str, dialog_context: list) -> str:
         messages.append({"role": "user", "content": prompt})
         
         # Prepare tools
-        tools = _prepare_tools(INDEX_KEYS)
+        tools = _prepare_tools([index_id] if index_id else INDEX_KEYS)
         logger.info(f"Making YandexGPT request with context: {messages}")
         
         # Make the request to Yandex Cloud through OpenAI library
