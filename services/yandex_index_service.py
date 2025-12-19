@@ -1,5 +1,6 @@
 import os
 import logging
+from services.dialog_service import set_topic_index
 from yandex_cloud_ml_sdk import YCloudML
 from yandex_cloud_ml_sdk.search_indexes import (
     HybridSearchIndexType,
@@ -82,7 +83,6 @@ class YandexIndexService:
         # First upload the file
         logger.info(f"Uploading file to Yandex Cloud: {file_path}")
         yc_file = self.sdk.files.upload(file_path, name=file_name)
-        logger.info(f"Uploaded file to Yandex Cloud: {yc_file!r}")
         
         # Check if index exists
         index = self.get_index_by_name(index_name)
@@ -135,6 +135,7 @@ class YandexIndexService:
         index = self.get_index_by_name(index_name)
 
         if index: 
+            set_topic_index(user_id, topic_name, index.id)
             return index.id
         
         return None

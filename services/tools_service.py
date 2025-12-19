@@ -129,7 +129,7 @@ def _get_user_index_id(user_id: int) :
     try:
         sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
         index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
-        index_id = index_service.get_index_id_for_topic(user_id, current_topic)
+        index_id = index_service.get_index_id_for_topic(user_id, current_topic) or index_id
 
     except Exception as e:
         logger.error(f"Error getting index IDs for user {user_id}: {e}")
