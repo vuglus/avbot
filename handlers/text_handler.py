@@ -19,20 +19,11 @@ class TextHandler(BaseHandler):
         # Add user message to dialog history
         add_message_to_topic(user_id, {"role": "user", "text": user_input})
         
-        # Get current topic and index ID
-        dialog_data = load_user_dialog(user_id)
-        current_topic = dialog_data.get("current_topic", "default")
-        
-        # Initialize YandexIndexService to get index ID
-        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
-        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
-        index_id = index_service.get_index_id_for_topic(user_id, current_topic)
-        
         # Get last 15 messages for context
         dialog_context = get_last_messages(user_id, 15)
         
         try:
-            reply = ask_yandexgpt_with_context(user_input, dialog_context, index_id)
+            reply = ask_yandexgpt_with_context(user_input, dialog_context, user_id)
             self.logger.info("TextHandler received response from YandexGPT")
             
             # Add assistant message to dialog history

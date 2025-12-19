@@ -8,12 +8,18 @@ bot:
 
 yandex:
   system_prompt:
-  speech_api_key:  
+  speech_api_key:
   model: ----
-  index: 
+  index:
    - index1
    - index2
+  bot_index:
+   - bot_index1
+   - bot_index2
   key: ----
+
+user_default_index:
+  538395029: fvta64h7544q5l8d8tma
 
 ycloud:
   api_key:

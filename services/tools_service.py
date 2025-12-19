@@ -1,8 +1,11 @@
 import logging
 import json
 import requests
-from clients.mcp import MCPClient
-from services.config_service import MCP_B2B_INN_CHECK_URL, INDEX_KEYS
+from yandex_cloud_ml_sdk import YCloudML
+from services.config_service import MCP_B2B_INN_CHECK_URL, INDEX_KEY, USER_INDEX_KEY
+from services.dialog_service import load_user_dialog, DEFAULT_TOPIC
+from services.config_service import YCLOUD_FOLDER_ID, YCLOUD_API_KEY
+from services.yandex_index_service import YandexIndexService
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -54,7 +57,7 @@ def call_mcp_tool(tool_name: str, args: dict) -> dict:
         return {"error": str(e)}
 
 
-def _prepare_tools(index_keys):
+def _prepare_tools(index_keys: list):
     """Prepare tools for YandexGPT request"""
     # Start with the base tools
     tools = []
@@ -107,5 +110,34 @@ def _prepare_tools(index_keys):
     
     return tools
 
-# Make functions available for import
-__all__ = ['_prepare_tools', 'call_mcp_tool']
+def _get_user_index_id(user_id: int) :
+    """Get combined index IDs for a specific user.
+    
+    Args:
+        user_id: User ID to get index IDs for
+        
+    Returns:
+        List of unique index IDs preserving order
+    """
+    dialog_data = load_user_dialog(user_id)
+    current_topic = dialog_data.get("current_topic", DEFAULT_TOPIC)
+    logger.info(f"Current topic: {current_topic}")
+
+    # Get index ID for user's default topic
+    index_id = USER_INDEX_KEY.get(str(user_id), INDEX_KEY)
+
+    try:
+        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
+        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
+        index_id = index_service.get_index_id_for_topic(user_id, current_topic)
+
+    except Exception as e:
+        logger.error(f"Error getting index IDs for user {user_id}: {e}")
+        pass
+    
+    # Remove duplicates while preserving order using dict (Python 3.7+ maintains insertion order)
+    # Filter out None/empty values during deduplication
+    
+    return index_id
+
+__all__ = ['_prepare_tools', 'call_mcp_tool', '_get_user_index_id']

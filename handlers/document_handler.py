@@ -3,9 +3,8 @@ import tempfile
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from services.yandexgpt_service import ask_yandexgpt
 from services.yandex_index_service import YandexIndexService
-from services.dialog_service import load_user_dialog, save_user_dialog
+from services.dialog_service import load_user_dialog
 from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
 from yandex_cloud_ml_sdk import YCloudML
 from handlers.base_handler import BaseHandler
@@ -49,9 +48,7 @@ class DocumentHandler(BaseHandler):
 
             # Загружаем файл в индекс
             try:
-                index_id = index_service.upload_file_to_index(temp_path, file_name, index_name)
-                dialog_data.update({"index_id": index_id})                
-                save_user_dialog(user_id, dialog_data)
+                index_service.upload_file_to_index(temp_path, file_name, index_name)
                 self.logger.info(f"File uploaded and indexed successfully to {index_name}")
             except Exception as e:
                 self.logger.error(f"Error indexing file: {str(e)}")

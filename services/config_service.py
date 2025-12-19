@@ -26,8 +26,9 @@ YCLOUD_FOLDER_ID = config['ycloud']['folder_id']
 SYSTEM_PROMPT = config['yandex']['system_prompt']
 SPEECH_API_KEY = config['yandex']['speech_api_key']
 SYSTEM_MODEL = config['yandex']['model']
-INDEX_KEYS = config['yandex'].get('index', [])
+INDEX_KEY = config['yandex']['index']
 BOT_KEY = config['yandex']['key']
+USER_INDEX_KEY = config['yandex']['user_index']
 
 # S3 configuration
 S3_ACCESS_KEY = config['s3']['access_key']

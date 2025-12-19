@@ -1,6 +1,4 @@
 import requests
-import os
-
 
 def recognize_speech(filepath: str, api_key: str, folder_id: str, lang: str = 'ru-RU') -> str:
     with open(filepath, 'rb') as f:

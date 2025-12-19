@@ -1,4 +1,4 @@
-from services.config_service import BOT_KEY, YCLOUD_FOLDER_ID, SYSTEM_PROMPT, SYSTEM_MODEL, INDEX_KEYS
+from services.config_service import BOT_KEY, YCLOUD_FOLDER_ID, SYSTEM_PROMPT, SYSTEM_MODEL
 import openai
 
 class YandexGPClient:
