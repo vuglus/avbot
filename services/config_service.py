@@ -1,5 +1,4 @@
 import yaml
-import os
 
 # Load configuration from YAML file
 def load_config():
@@ -37,3 +36,9 @@ S3_BUCKET_NAME = config['s3']['bucket_name']
 
 # MCP configuration
 MCP_B2B_INN_CHECK_URL = config['mcp']['b2b_inn_check_url']
+
+# ICS configuration
+ICS_API_KEY = config['data']['ics']['api_key']
+ICS_URL = config['data']['ics']['url']
+ICS_PULLING_INTERVAL = config['data']['ics']['pulling_interval']
+ICS_SYSTEM_PROMPT = config['data']['ics']['system_prompt']

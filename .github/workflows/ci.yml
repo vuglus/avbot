@@ -1,0 +1,79 @@
+name: avbot CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run application import check
+        run: |
+          python -c "import flask, requests; print('Imports OK')"
+
+      - name: Run tests
+        run: |
+          pytest -q
+
+      - name: Check SSH connectivity
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "SSH connection successful"
+            uname -a
+
+      - name: Build Docker image
+        run: |
+          docker build -t avbot:ci .
+
+      - name: Save Docker image
+        run: |
+          docker save avbot:ci | gzip > avbot.tar.gz
+
+      - name: Copy image to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "avbot.tar.gz"
+          target: "~/avbot"
+
+      - name: Deploy Docker on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/avbot
+            docker load < avbot.tar.gz
+            docker stop avbot || true
+            docker rm avbot || true
+            docker run -d \
+              --name avbot \
+              -p 5200:5200 \
+              -v ~/avbot/config:/config:ro \
+              -v ~/avbot/data:/data \
+              -e CONFIG_PATH=/config/config.yml \
+              --restart unless-stopped \
+              avbot:ci

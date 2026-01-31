@@ -1,12 +1,15 @@
 import logging
+import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from services.config_service import BOT_TOKEN
+from services.config_service import BOT_TOKEN, config
 from handlers.start_handler import StartHandler
 from handlers.text_handler import TextHandler
 from handlers.document_handler import DocumentHandler
 from handlers.audio_handler import AudioHandler
 from handlers.topic_handler import TopicHandler
 from handlers.callback_handler import CallbackHandler
+from clients.icsclient import ICSClient
+from handlers.icshandler import ICSHandler
 
 # Set up logging
 logging.basicConfig(
@@ -35,5 +38,14 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler.handle))
     app.add_handler(MessageHandler(filters.AUDIO | filters.VOICE, audio_handler.handle))
 
+    # Initialize and start ICS monitoring
+    async def start_ics_monitoring(application):
+        ics_client = ICSClient(config)
+        ics_handler = ICSHandler(config, application.bot)
+        # Start monitoring in the background
+        asyncio.create_task(ics_handler.monitor_loop(ics_client))
+    
     print("Бот запущен...")
+    # Start ICS monitoring
+    app.post_init = start_ics_monitoring
     app.run_polling()
