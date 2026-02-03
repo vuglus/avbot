@@ -20,3 +20,9 @@ workflows:
             script:
               - pytest -q
 
+          - name: build-cube
+            script:
+              - docker build -t avbot:ci .
+          - name: Save Docker image
+            script: |
+              docker save avbot:ci | gzip > avbot.tar.gz
