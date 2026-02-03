@@ -46,6 +46,11 @@ def load_user_dialog(user_id: int) -> Dict:
         current_topic = data.get("current_topic", DEFAULT_TOPIC)
         if current_topic not in data["topics"]:
             data["topics"][current_topic] = {"messages": []}
+        data["current_topic"] = current_topic
+        
+        # Убедимся, что DEFAULT_TOPIC существует
+        if DEFAULT_TOPIC not in data["topics"]:
+            data["topics"][DEFAULT_TOPIC] = {"messages": []}
 
         return data
 

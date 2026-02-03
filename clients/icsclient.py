@@ -11,8 +11,6 @@ class ICSClient:
     """Client for fetching and parsing ICS events data"""
     
     def __init__(self, config: Dict[str, Any]):
-        print(f"!!!...{ICS_API_KEY}")
-
         self.config = config
         self.api_key = ICS_API_KEY
         self.base_url = ICS_URL
@@ -36,33 +34,47 @@ class ICSClient:
             logger.error(f"Error fetching events for user {user_id}: {str(e)}")
             return []
 
-    def compare_events(self, old_events: List[Dict], new_events: List[Dict]) -> Dict[str, List[Dict]]:
-        """Compare old and new events to find added, removed, and modified events"""
-        # Create dictionaries for easier comparison
-        old_events_dict = {event['id']: event for event in old_events}
-        new_events_dict = {event['id']: event for event in new_events}
-        
+    def compare_events(self, old_events, new_events):
+        def key(event):
+            return event["uid"]  # стабильный идентификатор
+
+        def normalize(event):
+            # Create a normalized version of the event for comparison
+            # This ensures we only compare relevant fields
+            return {
+                "uid": event.get("uid"),
+                "title": event.get("title"),
+                "start_datetime": event.get("start_datetime"),
+                "end_datetime": event.get("end_datetime"),
+                "description": event.get("description")
+            }
+
+        old_events_dict = {key(e): e for e in old_events}
+        new_events_dict = {key(e): e for e in new_events}
+
         added = []
         removed = []
         modified = []
-        
-        # Check for added events (in new but not in old)
-        for event_id, event in new_events_dict.items():
-            if event_id not in old_events_dict:
-                added.append(event)
-            elif old_events_dict[event_id] != event:
+
+        for uid, new_event in new_events_dict.items():
+            old_event = old_events_dict.get(uid)
+
+            if not old_event:
+                added.append(new_event)
+                continue
+
+            if normalize(old_event) != normalize(new_event):
                 modified.append({
-                    'old': old_events_dict[event_id],
-                    'new': event
+                    "old": old_event,
+                    "new": new_event
                 })
-        
-        # Check for removed events (in old but not in new)
-        for event_id, event in old_events_dict.items():
-            if event_id not in new_events_dict:
-                removed.append(event)
-        
+
+        for uid, old_event in old_events_dict.items():
+            if uid not in new_events_dict:
+                removed.append(old_event)
+
         return {
-            'added': added,
-            'removed': removed,
-            'modified': modified
+            "added": added,
+            "removed": removed,
+            "modified": modified
         }
