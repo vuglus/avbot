@@ -6,7 +6,7 @@ on:
 
 workflows:
   sample-workflow:
-    runs_on: serverless # Experimental mode. For other options, see: https://sourcecraft.dev/portal/docs/ru/sourcecraft/ci-cd-ref/workflows
+    runs_on: self-hosted # Experimental mode. For other options, see: https://sourcecraft.dev/portal/docs/ru/sourcecraft/ci-cd-ref/workflows
     tasks:
       - name: sample-task
         cubes:
