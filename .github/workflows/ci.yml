@@ -74,6 +74,8 @@ jobs:
               -p 5200:5200 \
               -v ~/avbot/config:/config:ro \
               -v ~/avbot/data:/data \
+              -v ~/avbot/uploads:/uploads \
+              -v ~/avbot/uploads:/uploads \
               -e CONFIG_PATH=/config/config.yml \
               --restart unless-stopped \
               avbot:ci
