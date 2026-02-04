@@ -16,11 +16,19 @@ class TestICSHandler:
     def config(self):
         """Create a test configuration"""
         return Config({
+            'yandex': {
+                'key': 'test-key',
+                'system_prompt': 'Test system prompt',
+            },
+            'ycloud': {
+                'api_key': 'test-api-key',
+            },
             'bot': {
                 'whitelist': [12345, 67890]
             },
             'ics' : {
                 'system_prompt': 'Test system prompt',
+                'pulling_interval': 1
             }
         })
 
@@ -125,15 +133,16 @@ class TestICSHandler:
         assert "- Removed Event (2023-01-02T10:00:00)" in result
         assert "- Updated Event (2023-01-03T11:00:00)" in result
 
-    @patch('handlers.icshandler.ask_yandexgpt')
     @pytest.mark.asyncio
-    async def test_send_notification_with_changes(self, mock_ask_yandexgpt, ics_handler):
+    async def test_send_notification_with_changes(self, ics_handler):
         """Test send_notification method with changes"""
         # Mock the ask_yandexgpt function
-        mock_ask_yandexgpt.return_value = "Test response from YandexGPT"
         
         # Mock the bot's send_message method
         ics_handler.bot.send_message = AsyncMock()
+        ics_handler.gpt.ask_yandexgpt = Mock(
+            return_value="Test response from YandexGPT"
+        )
         
         changes = {
             'added': [
@@ -147,7 +156,10 @@ class TestICSHandler:
         
         # Verify ask_yandexgpt was called with correct prompt
         expected_prompt = "Test system prompt\n\nДобавлено событий: 1\n- New Event (2023-01-01T10:00:00)"
-        mock_ask_yandexgpt.assert_called_with(expected_prompt, 12345)
+        ics_handler.gpt.ask_yandexgpt.assert_called_with(
+            expected_prompt, 
+            12345
+        )
         
         # Verify bot.send_message was called
         ics_handler.bot.send_message.assert_called_with(
@@ -172,13 +184,12 @@ class TestICSHandler:
         # Should not send any message when there are no changes
         ics_handler.bot.send_message.assert_not_called()
 
-    @patch('handlers.icshandler.ask_yandexgpt')
     @patch('handlers.icshandler.logger')
     @pytest.mark.asyncio
-    async def test_send_notification_exception(self, mock_logger, mock_ask_yandexgpt, ics_handler):
+    async def test_send_notification_exception(self, mock_logger, ics_handler):
         """Test send_notification method when an exception occurs"""
+        ics_handler.gpt.ask_yandexgpt = Mock(side_effect = Exception("YandexGPT error"))
         # Mock ask_yandexgpt to raise an exception
-        mock_ask_yandexgpt.side_effect = Exception("YandexGPT error")
         
         changes = {
             'added': [
@@ -197,11 +208,12 @@ class TestICSHandler:
         """Test check_user_events method with changes"""
         # Mock the ICSClient and its compare_events method
         with patch('clients.icsclient.ICSClient') as mock_ics_client_class:
-            mock_ics_client = Mock()
-            mock_ics_client_class.return_value = mock_ics_client
+            ics_handler.ics_client = mock_ics_client_class()
+            ics_handler.ics_client.compare_events = Mock()
+            ics_handler.ics_client.return_value = ics_handler.ics_client
             
             # Mock compare_events to return changes
-            mock_ics_client.compare_events.return_value = {
+            ics_handler.ics_client.compare_events.return_value = {
                 'added': [{'uid': '1', 'title': 'New Event', 'start_datetime': '2023-01-01T10:00:00'}],
                 'removed': [],
                 'modified': []
@@ -215,7 +227,7 @@ class TestICSHandler:
                 ics_handler.check_user_events(12345, [{'uid': '1', 'title': 'New Event', 'start_datetime': '2023-01-01T10:00:00'}])
                 
                 # Verify compare_events was called
-                mock_ics_client.compare_events.assert_called()
+                ics_handler.ics_client.compare_events.assert_called()
                 
                 # Verify asyncio.create_task was called to schedule notification
                 mock_create_task.assert_called_once()
@@ -227,11 +239,11 @@ class TestICSHandler:
         """Test check_user_events method with no changes"""
         # Mock the ICSClient and its compare_events method
         with patch('clients.icsclient.ICSClient') as mock_ics_client_class:
-            mock_ics_client = Mock()
-            mock_ics_client_class.return_value = mock_ics_client
+            ics_handler.ics_client = mock_ics_client_class()
+            ics_handler.ics_client.compare_events = Mock()
             
             # Mock compare_events to return no changes
-            mock_ics_client.compare_events.return_value = {
+            ics_handler.ics_client.compare_events.return_value = {
                 'added': [],
                 'removed': [],
                 'modified': []
@@ -245,7 +257,7 @@ class TestICSHandler:
                 ics_handler.check_user_events(12345, [{'uid': '1', 'title': 'Event', 'start_datetime': '2023-01-01T10:00:00'}])
                 
                 # Verify compare_events was called
-                mock_ics_client.compare_events.assert_called()
+                ics_handler.ics_client.compare_events.assert_called()
                 
                 # Should not schedule notification when there are no changes
                 mock_create_task.assert_not_called()
@@ -258,8 +270,8 @@ class TestICSHandler:
         """Test check_user_events method when an exception occurs"""
         # Mock the ICSClient to raise an exception
         with patch('clients.icsclient.ICSClient') as mock_ics_client_class:
-            mock_ics_client_class.side_effect = Exception("ICS client error")
-            
+            ics_handler.ics_client = mock_ics_client_class()
+            ics_handler.ics_client.compare_events = Mock(side_effect=Exception("ICS client error"))
             ics_handler.check_user_events(12345, [])
             
             # Should log the error
@@ -269,15 +281,15 @@ class TestICSHandler:
     async def test_monitor_loop(self, ics_handler):
         """Test monitor_loop method"""
         # Mock the ICSClient
-        mock_ics_client = Mock()
-        mock_ics_client.pulling_interval = 0.1  # Short interval for testing
-        mock_ics_client.fetch_events.return_value = []
+        ics_handler.ics_client = Mock()
+        ics_handler.ics_client.pulling_interval = 0.1  # Short interval for testing
+        ics_handler.ics_client.fetch_events.return_value = []
         
         # Mock the check_user_events method
         ics_handler.check_user_events = Mock()
         
         # Create a task for the monitor loop and cancel it after a short time
-        task = asyncio.create_task(ics_handler.monitor_loop(mock_ics_client))
+        task = asyncio.create_task(ics_handler.monitor_loop(ics_handler.ics_client))
         
         # Wait briefly to allow the loop to run
         await asyncio.sleep(0.2)
@@ -291,7 +303,7 @@ class TestICSHandler:
             pass
         
         # Verify the methods were called
-        mock_ics_client.fetch_events.assert_called()
+        ics_handler.ics_client.fetch_events.assert_called()
         ics_handler.check_user_events.assert_called()
 
     @pytest.mark.asyncio

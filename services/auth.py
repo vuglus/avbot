@@ -1,15 +1,17 @@
 from telegram import Update
-from services.config_service import config
+from services.config_service import Config
 
 
 class AuthService:
     """Authorization service for checking user access"""
+    def __init__(self, config: Config):
+        self.config = config
+        pass
     
-    @staticmethod
-    async def is_authorized(update: Update) -> bool:
+    async def is_authorized(self, update: Update) -> bool:
         """Check if the user is authorized"""
         # If whitelist is empty, allow all users
-        if not config.getBotWhitelist():
+        if not self.config.getBotWhitelist():
             return True
         
         # If whitelist is not empty, check if user is in whitelist
@@ -22,10 +24,9 @@ class AuthService:
             user_id = update.effective_user.id
             
         # Check if user is in whitelist
-        return user_id in config.getBotWhitelist()
+        return user_id in self.config.getBotWhitelist()
     
-    @staticmethod
-    async def send_unauthorized_message(update: Update):
+    async def send_unauthorized_message(self, update: Update):
         """Send unauthorized access message to user"""
         await update.message.reply_text("Извините, у вас нет доступа к этому боту. Уточните свой ИД у бота (https://t.me/userinfobot) и пришлите его @avinogradov")
         

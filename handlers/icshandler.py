@@ -2,8 +2,9 @@ import asyncio
 import logging
 from typing import Dict, List, Any, Optional
 from telegram import Bot
-from services.yandexgpt_service import ask_yandexgpt
 from services.config_service import Config
+from services.yandexgpt_service import YandexGPTService
+from clients.icsclient import ICSClient
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -17,6 +18,8 @@ class ICSHandler:
         self.system_prompt = config.get('ics', 'system_prompt')
         self.whitelist = config.get('bot', 'whitelist', {})
         self.user_states: Dict[int, List[Dict]] = {}  # In-memory state storage
+        self.gpt = YandexGPTService(config)
+        self.ics_client = ICSClient(config)
 
     def format_changes(self, changes: Dict[str, List[Dict]]) -> str:
         """Format changes into a string representation"""
@@ -55,7 +58,7 @@ class ICSHandler:
                 prompt = f"{self.system_prompt}\n\n{changes_text}"
                 
                 # Get response from YandexGPT
-                response = ask_yandexgpt(prompt, user_id)
+                response = self.gpt.ask_yandexgpt(prompt, user_id)
                 
                 # Send the response to the user
                 await self.bot.send_message(
@@ -73,9 +76,7 @@ class ICSHandler:
             old_events = self.user_states.get(user_id, [])
             
             # Compare events using the client's method
-            from clients.icsclient import ICSClient
-            ics_client = ICSClient(self.config)
-            changes = ics_client.compare_events(old_events, new_events)
+            changes = self.ics_client.compare_events(old_events, new_events)
             
             # Only send notification if there are actual changes
             if any(changes.values()):

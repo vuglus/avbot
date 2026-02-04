@@ -3,13 +3,16 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandex_index_service import YandexIndexService
 from services.dialog_service import load_user_dialog
-from services.config_service import config
+from services.config_service import Config
 from yandex_cloud_ml_sdk import YCloudML
 from handlers.base_handler import BaseHandler
 
 class DocumentHandler(BaseHandler):
     """Handle document attachments"""
-    
+    def __init__(self, config: Config):
+        super().__init__(config)
+        self.config = config
+
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         
@@ -18,8 +21,8 @@ class DocumentHandler(BaseHandler):
         current_topic = dialog_data.get("current_topic", "default")
         
         # Инициализируем YandexIndexService
-        sdk = YCloudML(folder_id=config.getCloudFolder(), auth=config.getCloudKey())
-        index_service = YandexIndexService(sdk, config.getCloudFolder())
+        sdk = YCloudML(folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey())
+        index_service = YandexIndexService(sdk, self.config.getCloudFolder())
         index_name = index_service.get_index_name(user_id, current_topic)
         
         self.logger.info(f"Using index name: {index_name}")

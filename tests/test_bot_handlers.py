@@ -12,11 +12,23 @@ mock_config_data = {
                 'whitelist': [12345, 67890],
                 'welcome': 'Welcome to AVBot!'
             },
+            'yandex': {
+                'system_prompt': 'You are a bot.',
+                'speech_api_key': 'test_speech_api_key',
+                'key': 'test_key',
+            },
+            'ycloud': {
+                'api_key' : 'test_api_key',
+                'folder_id': 'test_folder_id',
+            },
             'ics': {
                 'system_prompt': 'You are a calendar bot.',
-                'url': 'https://example.com/calendar.ics'
+                'url': 'https://example.com/calendar.ics',
+                'pulling_interval': 10,
             }
         }
+
+config = Config(mock_config_data)
 
 class TestBotHandlers:
     """Test suite for bot handlers"""
@@ -76,7 +88,7 @@ class TestBotHandlers:
     @pytest.mark.asyncio
     async def test_start_handler_whitelisted_user(self, mock_update, mock_context):
         from handlers.start_handler import StartHandler
-        handler = StartHandler(Config(mock_config_data))
+        handler = StartHandler(config)
         mock_update.message.reply_text = AsyncMock()
         await handler.handle_unauthorized(mock_update, mock_context)
         
@@ -85,39 +97,56 @@ class TestBotHandlers:
 
     @pytest.mark.asyncio
     async def test_text_handler_success(self, mock_update, mock_context):
-        """Test text handler with successful response"""
-        with patch('handlers.text_handler.ask_yandexgpt_with_context') as mock_ask_yandexgpt, \
-             patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
-             patch('handlers.text_handler.add_message_to_topic'), \
-             patch('handlers.text_handler.get_last_messages'):
-            
-            # Mock ask_yandexgpt to return a response
-            mock_ask_yandexgpt.return_value = "Test response from YandexGPT"
+        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
+            patch('handlers.text_handler.add_message_to_topic'), \
+            patch('handlers.text_handler.get_last_messages', return_value=[]):
+
             from handlers.text_handler import TextHandler
-            handler = TextHandler()
+
+            mock_yandexgpt_service = Mock()
+            mock_yandexgpt_service.ask_yandexgpt_with_context = Mock(
+                return_value="Test response from YandexGPT"
+            )
+
+            handler = TextHandler(config, mock_yandexgpt_service)
+
+            mock_update.message.text = "hello"
+            mock_update.effective_user.id = 123
             mock_update.message.reply_text = AsyncMock()
-            
+
             await handler.handle_authorized(mock_update, mock_context)
-            
-            # Verify response was sent
-            mock_update.message.reply_text.assert_called_once_with("Test response from YandexGPT")
+
+            mock_update.message.reply_text.assert_called_once()
+            args, _ = mock_update.message.reply_text.call_args
+            assert args[0] == "Test response from YandexGPT"
+
 
     @pytest.mark.asyncio
     async def test_text_handler_exception(self, mock_update, mock_context):
         """Test text handler when an exception occurs"""
-        with patch('services.yandexgpt_service.ask_yandexgpt_with_context') as mock_ask_yandexgpt, \
-             patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
-            
-            # Mock ask_yandexgpt to raise an exception
-            mock_ask_yandexgpt.side_effect = Exception("YandexGPT error")
-            from handlers.text_handler import TextHandler
-            handler = TextHandler()
+
+        from handlers.text_handler import TextHandler
+
+        # --- mock YandexGPTService ---
+        mock_yandexgpt_service = Mock()
+        mock_yandexgpt_service.ask_yandexgpt_with_context = Mock(
+            side_effect=Exception("YandexGPT error")
+        )
+
+        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
+            handler = TextHandler(config, mock_yandexgpt_service)
+
+            mock_update.message.text = "hello"
+            mock_update.effective_user.id = 123
             mock_update.message.reply_text = AsyncMock()
-            
+
             await handler.handle_authorized(mock_update, mock_context)
-            
-            # Verify error message was sent
+
+            # handler обязан что-то ответить пользователю
             mock_update.message.reply_text.assert_called_once()
+
+            args, _ = mock_update.message.reply_text.call_args
+            assert isinstance(args[0], str)
 
     @pytest.mark.asyncio
     async def test_document_handler_success(self, mock_update, mock_context):
@@ -136,7 +165,7 @@ class TestBotHandlers:
             mock_index_service.return_value = mock_index_instance
 
             from handlers.document_handler import DocumentHandler
-            handler = DocumentHandler()
+            handler = DocumentHandler(config)
             mock_update.message.reply_text = AsyncMock()
             
             await handler.handle_authorized(mock_update, mock_context)
@@ -153,7 +182,7 @@ class TestBotHandlers:
         
         with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
             from handlers.topic_handler import TopicHandler
-            handler = TopicHandler()
+            handler = TopicHandler(config)
             mock_update.message.reply_text = AsyncMock()
             
             await handler.handle_authorized(mock_update, mock_context)
@@ -166,7 +195,7 @@ class TestBotHandlers:
         """Test ICS handler format_changes method with no changes"""
         mock_bot = Mock()        
         from handlers.icshandler import ICSHandler
-        handler = ICSHandler(Config(mock_config_data), mock_bot)
+        handler = ICSHandler(config, mock_bot)
         
         changes = {
             'added': [],
@@ -183,7 +212,7 @@ class TestBotHandlers:
         mock_bot = Mock()
 
         from handlers.icshandler import ICSHandler
-        handler = ICSHandler(Config(mock_config_data), mock_bot)
+        handler = ICSHandler(config, mock_bot)
         
         changes = {
             'added': [

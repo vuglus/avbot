@@ -48,8 +48,6 @@ def mock_config():
                 'oauth_token': 'test_token'
             }
         })
-    import services.config_service
-    services.config_service.config = config
     yield config
 
 # Configure asyncio mode

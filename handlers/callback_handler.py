@@ -7,6 +7,8 @@ from handlers.base_handler import BaseHandler
 
 class CallbackHandler(BaseHandler):
     """Handle callback queries from inline buttons"""
+    def __init__(self, config):
+        super().__init__(config)
     
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query

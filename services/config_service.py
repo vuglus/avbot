@@ -30,28 +30,3 @@ class Config:
     def getYandex(self,key, default=None):
         return self.get("yandex", key, default)
 
-# Load the configuration
-with open('config.yml', 'r', encoding='utf-8') as f:
-    config_data = yaml.safe_load(f)
-
-config = Config(config_data)
-
-# Yandex Cloud configuration
-SYSTEM_PROMPT = config.getYandex('system_prompt')
-SPEECH_API_KEY = config.getYandex('speech_api_key')
-SYSTEM_MODEL = config.getYandex('model')
-INDEX_KEY = config.getYandex('index')
-BOT_KEY = config.getYandex('key')
-USER_INDEX_KEY = config.getYandex('user_index')
-
-# S3 configuration
-S3_ACCESS_KEY = config.get('s3', 'access_key')
-S3_SECRET_KEY = config.get('s3', 'secret_key')
-
-# MCP configuration
-MCP_B2B_INN_CHECK_URL = config.get('mcp', 'b2b_inn_check_url')
-
-# ICS configuration
-ICS_API_KEY = config.get('ics', 'api_key')
-ICS_URL = config.get('ics', 'url')
-ICS_PULLING_INTERVAL = config.get('ics', 'pulling_interval')

@@ -1,7 +1,8 @@
 import logging
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from services.config_service import config
+from services.config_service import Config, load_config
+from services.yandexgpt_service import YandexGPTService
 from handlers.start_handler import StartHandler
 from handlers.text_handler import TextHandler
 from handlers.document_handler import DocumentHandler
@@ -18,17 +19,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+config = Config(load_config())
 # Build and run the bot
 if __name__ == '__main__':
     app = ApplicationBuilder().token(config.getBotToken()).build()
     
     # Create handler instances
     start_handler = StartHandler(config)
-    text_handler = TextHandler()
-    document_handler = DocumentHandler()
-    audio_handler = AudioHandler()
-    topic_handler = TopicHandler()
-    callback_handler = CallbackHandler()
+    text_handler = TextHandler(config, YandexGPTService(config))
+    document_handler = DocumentHandler(config)
+    audio_handler = AudioHandler(config, YandexGPTService(config))
+    topic_handler = TopicHandler(config)
+    callback_handler = CallbackHandler(config)
 
     # Register handlers
     app.add_handler(CommandHandler("start", start_handler.handle_unauthorized))
