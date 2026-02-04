@@ -17,9 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.9-slim
 
 # Create non-root user
-RUN useradd --create-home --shell /bin/bash apps
-USER apps
-WORKDIR /home/apps
+RUN useradd --create-home --shell /bin/bash app
+USER app
+WORKDIR /home/app
 
 # Copy dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
