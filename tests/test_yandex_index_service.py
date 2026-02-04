@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from services.yandex_index_service import YandexIndexService
-from yandex_cloud_ml_sdk import YCloudML
+from yandex_ai_studio_sdk import AIStudio
 
 
 class TestYandexIndexService:
@@ -14,11 +14,11 @@ class TestYandexIndexService:
     @pytest.fixture
     def mock_sdk(self):
         """Create a mock Yandex Cloud SDK"""
-        mock = Mock(spec=YCloudML)
+        mock = Mock(spec=AIStudio)
         mock.search_indexes = Mock()
         mock.files = Mock()
         return mock
-        return Mock(spec=YCloudML)
+        return Mock(spec=AIStudio)
 
     @pytest.fixture
     def index_service(self, mock_sdk):

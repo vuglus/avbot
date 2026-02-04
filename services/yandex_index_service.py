@@ -1,8 +1,8 @@
 import os
 import logging
 from services.dialog_service import set_topic_index
-from yandex_cloud_ml_sdk import YCloudML
-from yandex_cloud_ml_sdk.search_indexes import (
+from yandex_ai_studio_sdk import AIStudio
+from yandex_ai_studio_sdk.search_indexes import (
     HybridSearchIndexType,
     StaticIndexChunkingStrategy,
     VectorSearchIndexType,
@@ -12,7 +12,7 @@ from yandex_cloud_ml_sdk.search_indexes import (
 logger = logging.getLogger(__name__)
 
 class YandexIndexService:
-    def __init__(self, sdk: YCloudML, folder_id: str):
+    def __init__(self, sdk: AIStudio, folder_id: str):
         self.sdk = sdk
         self.folder_id = folder_id
 

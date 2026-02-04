@@ -1,7 +1,7 @@
 import logging
 import json
 import requests
-from yandex_cloud_ml_sdk import YCloudML
+from yandex_ai_studio_sdk import AIStudio
 from services.dialog_service import load_user_dialog, DEFAULT_TOPIC
 from services.config_service import Config
 from services.yandex_index_service import YandexIndexService
@@ -130,7 +130,7 @@ class ToolService:
         index_id = self.config.getYandex('user_index').get(str(user_id), index_def)
 
         try:
-            sdk = YCloudML(folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey())
+            sdk = AIStudio(folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey())
             index_service = YandexIndexService(sdk, self.config.getCloudFolder())
             index_id = index_service.get_index_id_for_topic(user_id, current_topic) or index_id
 

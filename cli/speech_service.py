@@ -1,8 +1,8 @@
 import sys
 import os
 from pydub import AudioSegment
-from services.speech import recognize_speech
-from services.config_service import Config, load_config
+from ..services.speech import recognize_speech
+from ..services.config_service import Config, load_config
 
 config = Config(load_config())
 
