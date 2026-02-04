@@ -1,13 +1,8 @@
-import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.speech_service import process_audio, process_voice
 from services.yandexgpt_service import ask_yandexgpt
 from handlers.base_handler import BaseHandler
-from services.dialog_service import load_user_dialog
-from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
-from services.yandex_index_service import YandexIndexService
-from yandex_cloud_ml_sdk import YCloudML
 
 class AudioHandler(BaseHandler):
     """Handle audio files"""

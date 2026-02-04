@@ -4,6 +4,7 @@ avbotvenv
 uploads
 transcripts
 __pycache__
+tests/.pytest_cache
 test.mp3
 test.sh
 config.yml

@@ -1,12 +1,11 @@
 import tempfile
 import logging
 import os
-import hashlib
 from telegram import Update
 from telegram.ext import ContextTypes
 from pydub import AudioSegment
 from services.speech import recognize_speech
-from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
+from services.config_service import config
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Recognize speech using Yandex SpeechKit
         try:
-            transcript = recognize_speech(ogg_path, YCLOUD_API_KEY, YCLOUD_FOLDER_ID)
+            transcript = recognize_speech(ogg_path, config.getCloudKey(), config.getCloudFolder())
         except Exception as e:
             logger.error(f"Error recognizing speech: {str(e)}")
             transcript = "Не удалось распознать речь"
@@ -79,7 +78,7 @@ async def process_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Recognize speech using Yandex SpeechKit
         try:
-            transcript = recognize_speech(ogg_path, YCLOUD_API_KEY, YCLOUD_FOLDER_ID)
+            transcript = recognize_speech(ogg_path, config.getCloudKey(), config.getCloudFolder())
         except Exception as e:
             logger.error(f"Error recognizing speech: {str(e)}")
             transcript = "Не удалось распознать речь"

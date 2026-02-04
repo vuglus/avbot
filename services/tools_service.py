@@ -4,7 +4,7 @@ import requests
 from yandex_cloud_ml_sdk import YCloudML
 from services.config_service import MCP_B2B_INN_CHECK_URL, INDEX_KEY, USER_INDEX_KEY
 from services.dialog_service import load_user_dialog, DEFAULT_TOPIC
-from services.config_service import YCLOUD_FOLDER_ID, YCLOUD_API_KEY
+from services.config_service import config
 from services.yandex_index_service import YandexIndexService
 
 # Initialize logger
@@ -127,8 +127,8 @@ def _get_user_index_id(user_id: int) :
     index_id = USER_INDEX_KEY.get(str(user_id), INDEX_KEY)
 
     try:
-        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
-        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
+        sdk = YCloudML(folder_id=config.getCloudFolder(), auth=config.getCloudKey())
+        index_service = YandexIndexService(sdk, config.getCloudFolder())
         index_id = index_service.get_index_id_for_topic(user_id, current_topic) or index_id
 
     except Exception as e:

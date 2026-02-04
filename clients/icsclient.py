@@ -2,7 +2,7 @@ import requests
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from services.config_service import ICS_API_KEY, ICS_URL, ICS_PULLING_INTERVAL
+from services.config_service import Config
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 class ICSClient:
     """Client for fetching and parsing ICS events data"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Config):
         self.config = config
-        self.api_key = ICS_API_KEY
-        self.base_url = ICS_URL
-        self.whitelist = config.get('bot', {}).get('whitelist', [])
-        self.pulling_interval = ICS_PULLING_INTERVAL * 60  # Convert to seconds
+        self.api_key = config.get('ics', 'api_key')
+        self.base_url = config.get('ics', 'url')
+        self.whitelist = config.getBotWhitelist()
+        self.pulling_interval = config.get('ics', 'pulling_interval') * 60  # Convert to seconds
 
     def fetch_events(self, user_id: int) -> List[Dict]:
         """Fetch events for a specific user from the API"""

@@ -1,11 +1,9 @@
-import os
 import tempfile
-import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandex_index_service import YandexIndexService
 from services.dialog_service import load_user_dialog
-from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
+from services.config_service import config
 from yandex_cloud_ml_sdk import YCloudML
 from handlers.base_handler import BaseHandler
 
@@ -19,11 +17,9 @@ class DocumentHandler(BaseHandler):
         dialog_data = load_user_dialog(user_id)
         current_topic = dialog_data.get("current_topic", "default")
         
-        # Формируем имя индекса
-            
         # Инициализируем YandexIndexService
-        sdk = YCloudML(folder_id=YCLOUD_FOLDER_ID, auth=YCLOUD_API_KEY)
-        index_service = YandexIndexService(sdk, YCLOUD_FOLDER_ID)
+        sdk = YCloudML(folder_id=config.getCloudFolder(), auth=config.getCloudKey())
+        index_service = YandexIndexService(sdk, config.getCloudFolder())
         index_name = index_service.get_index_name(user_id, current_topic)
         
         self.logger.info(f"Using index name: {index_name}")

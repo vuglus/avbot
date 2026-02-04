@@ -3,19 +3,20 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-import asyncio
-import json
+from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
-from handlers.start_handler import StartHandler
-from handlers.text_handler import TextHandler
-from handlers.document_handler import DocumentHandler
-from handlers.audio_handler import AudioHandler
-from handlers.topic_handler import TopicHandler
-from handlers.callback_handler import CallbackHandler
-from handlers.icshandler import ICSHandler
-from services.dialog_service import load_user_dialog
+from services.config_service import Config
 
+mock_config_data = {
+            'bot': {
+                'whitelist': [12345, 67890],
+                'welcome': 'Welcome to AVBot!'
+            },
+            'ics': {
+                'system_prompt': 'You are a calendar bot.',
+                'url': 'https://example.com/calendar.ics'
+            }
+        }
 
 class TestBotHandlers:
     """Test suite for bot handlers"""
@@ -71,32 +72,16 @@ class TestBotHandlers:
         context = Mock()
         return context
 
-    @pytest.fixture
-    def config(self):
-        """Create a test configuration"""
-        return {
-            'bot': {
-                'whitelist': [12345, 67890],
-                'admin_id': 12345,
-                'welcome': 'Welcome to AVBot!'
-            },
-            'yandex': {
-                'folder_id': 'test_folder_id',
-                'oauth_token': 'test_token'
-            }
-        }
 
     @pytest.mark.asyncio
     async def test_start_handler_whitelisted_user(self, mock_update, mock_context):
-        """Test start handler with whitelisted user"""
-        with patch('handlers.start_handler.BOT_WELCOME', 'Welcome to AVBot!'):
-            handler = StartHandler()
-            mock_update.message.reply_text = AsyncMock()
-            
-            await handler.handle_unauthorized(mock_update, mock_context)
-            
-            # Verify welcome message was sent
-            mock_update.message.reply_text.assert_called_once_with("Welcome to AVBot!")
+        from handlers.start_handler import StartHandler
+        handler = StartHandler(Config(mock_config_data))
+        mock_update.message.reply_text = AsyncMock()
+        await handler.handle_unauthorized(mock_update, mock_context)
+        
+        # Verify welcome message was sent
+        mock_update.message.reply_text.assert_called_once_with("Welcome to AVBot!")
 
     @pytest.mark.asyncio
     async def test_text_handler_success(self, mock_update, mock_context):
@@ -108,7 +93,7 @@ class TestBotHandlers:
             
             # Mock ask_yandexgpt to return a response
             mock_ask_yandexgpt.return_value = "Test response from YandexGPT"
-            
+            from handlers.text_handler import TextHandler
             handler = TextHandler()
             mock_update.message.reply_text = AsyncMock()
             
@@ -125,7 +110,7 @@ class TestBotHandlers:
             
             # Mock ask_yandexgpt to raise an exception
             mock_ask_yandexgpt.side_effect = Exception("YandexGPT error")
-            
+            from handlers.text_handler import TextHandler
             handler = TextHandler()
             mock_update.message.reply_text = AsyncMock()
             
@@ -142,17 +127,15 @@ class TestBotHandlers:
         mock_update.message.document.file_id = "test_file_id"
         mock_update.message.document.file_name = "test.txt"
         
-        with patch('services.config_service.YCLOUD_FOLDER_ID', 'test_folder_id'), \
-             patch('services.config_service.YCLOUD_API_KEY', 'test_token'), \
-             patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
+        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
              patch('services.yandex_index_service.YandexIndexService') as mock_index_service:
-            
             # Mock index service
             mock_index_instance = Mock()
             mock_index_instance.get_index_name.return_value = "test_index"
             mock_index_instance.upload_file_to_index = Mock()
             mock_index_service.return_value = mock_index_instance
-            
+
+            from handlers.document_handler import DocumentHandler
             handler = DocumentHandler()
             mock_update.message.reply_text = AsyncMock()
             
@@ -169,6 +152,7 @@ class TestBotHandlers:
         mock_update.message.text = "/topic Test topic"
         
         with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
+            from handlers.topic_handler import TopicHandler
             handler = TopicHandler()
             mock_update.message.reply_text = AsyncMock()
             
@@ -180,47 +164,36 @@ class TestBotHandlers:
     @pytest.mark.asyncio
     async def test_ics_handler_format_changes_no_changes(self):
         """Test ICS handler format_changes method with no changes"""
-        config = {
-            'bot': {
-                'whitelist': [12345, 67890]
-            }
-        }
-        mock_bot = Mock()
+        mock_bot = Mock()        
+        from handlers.icshandler import ICSHandler
+        handler = ICSHandler(Config(mock_config_data), mock_bot)
         
-        with patch('handlers.icshandler.ICS_SYSTEM_PROMPT', 'Test system prompt'):
-            handler = ICSHandler(config, mock_bot)
-            
-            changes = {
-                'added': [],
-                'removed': [],
-                'modified': []
-            }
-            
-            result = handler.format_changes(changes)
-            assert result == ""
+        changes = {
+            'added': [],
+            'removed': [],
+            'modified': []
+        }
+        
+        result = handler.format_changes(changes)
+        assert result == ""
 
     @pytest.mark.asyncio
     async def test_ics_handler_format_changes_added_events(self):
         """Test ICS handler format_changes method with added events"""
-        config = {
-            'bot': {
-                'whitelist': [12345, 67890]
-            }
-        }
         mock_bot = Mock()
+
+        from handlers.icshandler import ICSHandler
+        handler = ICSHandler(Config(mock_config_data), mock_bot)
         
-        with patch('handlers.icshandler.ICS_SYSTEM_PROMPT', 'Test system prompt'):
-            handler = ICSHandler(config, mock_bot)
-            
-            changes = {
-                'added': [
-                    {'uid': '1', 'title': 'New Event', 'start_datetime': '2023-01-01T10:00:00'},
-                    {'uid': '2', 'title': 'Another Event', 'start_datetime': '2023-01-02T15:00:00'}
-                ],
-                'removed': [],
-                'modified': []
-            }
-            
-            result = handler.format_changes(changes)
-            expected = "Добавлено событий: 2\n- New Event (2023-01-01T10:00:00)\n- Another Event (2023-01-02T15:00:00)"
-            assert result == expected
+        changes = {
+            'added': [
+                {'uid': '1', 'title': 'New Event', 'start_datetime': '2023-01-01T10:00:00'},
+                {'uid': '2', 'title': 'Another Event', 'start_datetime': '2023-01-02T15:00:00'}
+            ],
+            'removed': [],
+            'modified': []
+        }
+        
+        result = handler.format_changes(changes)
+        expected = "Добавлено событий: 2\n- New Event (2023-01-01T10:00:00)\n- Another Event (2023-01-02T15:00:00)"
+        assert result == expected

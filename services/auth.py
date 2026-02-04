@@ -1,5 +1,5 @@
 from telegram import Update
-from services.config_service import WHITELIST
+from services.config_service import config
 
 
 class AuthService:
@@ -9,7 +9,11 @@ class AuthService:
     async def is_authorized(update: Update) -> bool:
         """Check if the user is authorized"""
         # If whitelist is empty, allow all users
-        if not WHITELIST:
+        if not config.getBotWhitelist():
+            return True
+        
+        # If whitelist is not empty, check if user is in whitelist
+        if not update.effective_user:
             return True
             
         # Get user ID from update
@@ -18,7 +22,7 @@ class AuthService:
             user_id = update.effective_user.id
             
         # Check if user is in whitelist
-        return user_id in WHITELIST
+        return user_id in config.getBotWhitelist()
     
     @staticmethod
     async def send_unauthorized_message(update: Update):

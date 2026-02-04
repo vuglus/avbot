@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from unittest.mock import Mock, patch
 from clients.icsclient import ICSClient
-from services.config_service import ICS_API_KEY, ICS_URL, ICS_PULLING_INTERVAL
+from services.config_service import Config
 
 
 class TestICSClient:
@@ -14,32 +14,30 @@ class TestICSClient:
     @pytest.fixture
     def config(self):
         """Create a test configuration"""
-        return {
+        return Config({
             'bot': {
                 'whitelist': [12345, 67890]
+            },
+            'ics': {
+                'api_key': 'test_api_key',
+                'url': 'http://test.url',
+                'pulling_interval': 5 # 5 minutes in seconds
             }
-        }
+        })
 
     @pytest.fixture
     def ics_client(self, config):
         """Create an instance of ICSClient"""
-        with patch('clients.icsclient.ICS_API_KEY', 'test_api_key'), \
-             patch('clients.icsclient.ICS_URL', 'http://test.url'), \
-             patch('clients.icsclient.ICS_PULLING_INTERVAL', 5):
-            return ICSClient(config)
+        return ICSClient(config)
 
     def test_init(self, config):
         """Test initialization of ICSClient"""
-        with patch('clients.icsclient.ICS_API_KEY', 'test_api_key'), \
-             patch('clients.icsclient.ICS_URL', 'http://test.url'), \
-             patch('clients.icsclient.ICS_PULLING_INTERVAL', 5):
-            client = ICSClient(config)
-            
-            assert client.config == config
-            assert client.api_key == 'test_api_key'
-            assert client.base_url == 'http://test.url'
-            assert client.whitelist == [12345, 67890]
-            assert client.pulling_interval == 300  # 5 minutes in seconds
+        client = ICSClient(config)
+        assert client.config == config
+        assert client.api_key == 'test_api_key'
+        assert client.base_url == 'http://test.url'
+        assert client.whitelist == {12345, 67890}
+        assert client.pulling_interval == 300
 
     @patch('clients.icsclient.requests.get')
     @patch('clients.icsclient.logger')

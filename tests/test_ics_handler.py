@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 import asyncio
 from handlers.icshandler import ICSHandler
-from services.config_service import ICS_SYSTEM_PROMPT
+from services.config_service import Config
 
 
 class TestICSHandler:
@@ -15,11 +15,14 @@ class TestICSHandler:
     @pytest.fixture
     def config(self):
         """Create a test configuration"""
-        return {
+        return Config({
             'bot': {
                 'whitelist': [12345, 67890]
+            },
+            'ics' : {
+                'system_prompt': 'Test system prompt',
             }
-        }
+        })
 
     @pytest.fixture
     def mock_bot(self):
@@ -28,20 +31,17 @@ class TestICSHandler:
 
     @pytest.fixture
     def ics_handler(self, config, mock_bot):
-        """Create an instance of ICSHandler"""
-        with patch('handlers.icshandler.ICS_SYSTEM_PROMPT', 'Test system prompt'):
-            return ICSHandler(config, mock_bot)
+        return ICSHandler(config, mock_bot)
+            
 
     def test_init(self, config, mock_bot):
-        """Test initialization of ICSHandler"""
-        with patch('handlers.icshandler.ICS_SYSTEM_PROMPT', 'Test system prompt'):
-            handler = ICSHandler(config, mock_bot)
-            
-            assert handler.config == config
-            assert handler.bot == mock_bot
-            assert handler.system_prompt == 'Test system prompt'
-            assert handler.whitelist == [12345, 67890]
-            assert handler.user_states == {}
+        handler = ICSHandler(config, mock_bot)
+        
+        assert handler.config == config
+        assert handler.bot == mock_bot
+        assert handler.system_prompt == 'Test system prompt'
+        assert handler.whitelist == [12345, 67890]
+        assert handler.user_states == {}
 
     def test_format_changes_no_changes(self, ics_handler):
         """Test format_changes method with no changes"""

@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
-from services.config_service import BOT_TOKEN, config
+from services.config_service import config
 from handlers.start_handler import StartHandler
 from handlers.text_handler import TextHandler
 from handlers.document_handler import DocumentHandler
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 # Build and run the bot
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(config.getBotToken()).build()
     
     # Create handler instances
-    start_handler = StartHandler()
+    start_handler = StartHandler(config)
     text_handler = TextHandler()
     document_handler = DocumentHandler()
     audio_handler = AudioHandler()

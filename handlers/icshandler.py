@@ -2,8 +2,8 @@ import asyncio
 import logging
 from typing import Dict, List, Any, Optional
 from telegram import Bot
-from services.config_service import ICS_SYSTEM_PROMPT
 from services.yandexgpt_service import ask_yandexgpt
+from services.config_service import Config
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 class ICSHandler:
     """Handler for forming messages and sending ICS notifications"""
     
-    def __init__(self, config: Dict[str, Any], bot: Bot):
+    def __init__(self, config: Config, bot: Bot):
         self.config = config
         self.bot = bot
-        self.system_prompt = ICS_SYSTEM_PROMPT
-        self.whitelist = config.get('bot', {}).get('whitelist', [])
+        self.system_prompt = config.get('ics', 'system_prompt')
+        self.whitelist = config.get('bot', 'whitelist', {})
         self.user_states: Dict[int, List[Dict]] = {}  # In-memory state storage
 
     def format_changes(self, changes: Dict[str, List[Dict]]) -> str:

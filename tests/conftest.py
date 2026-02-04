@@ -4,6 +4,7 @@ import pytest
 
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from services.config_service import Config
 
 # Add the clients directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'clients')))
@@ -28,26 +29,28 @@ def test_data_dir(project_root):
     """Return the test data directory path"""
     return os.path.join(project_root, 'tests', 'data')
 
-
-@pytest.fixture
 def mock_config():
-    """Create a mock configuration for testing"""
-    return {
-        'bot': {
-            'whitelist': [12345, 67890],
-            'admin_id': 12345,
-            'welcome': 'Welcome to AVBot!'
-        },
-        'yandex': {
-            'folder_id': 'test_folder_id',
-            'oauth_token': 'test_token'
-        },
-        'speech': {
-            'folder_id': 'test_folder_id',
-            'oauth_token': 'test_token'
-        }
-    }
-
+    @pytest.fixture(scope="session", autouse=True)
+    def config(self):
+        """Create a test configuration"""
+        return Config({
+            'bot': {
+                'whitelist': [12345, 67890],
+                'admin_id': 12345,
+                'welcome': 'Welcome to AVBot!'
+            },
+            'ycloud': {
+                'folder_id': 'test_folder_id',
+                'api_key': 'test_token'
+            },
+            'yandex': {
+                'folder_id': 'test_folder_id',
+                'oauth_token': 'test_token'
+            }
+        })
+    import services.config_service
+    services.config_service.config = config
+    yield config
 
 # Configure asyncio mode
 @pytest.fixture(scope="session")

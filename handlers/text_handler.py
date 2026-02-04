@@ -1,12 +1,8 @@
-import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandexgpt_service import ask_yandexgpt_with_context
 from handlers.base_handler import BaseHandler
 from services.dialog_service import add_message_to_topic, get_last_messages, load_user_dialog
-from services.config_service import YCLOUD_API_KEY, YCLOUD_FOLDER_ID
-from services.yandex_index_service import YandexIndexService
-from yandex_cloud_ml_sdk import YCloudML
 
 class TextHandler(BaseHandler):
     """Handle text messages"""
