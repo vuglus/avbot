@@ -2,7 +2,7 @@ import yaml
 
 # Load configuration from YAML file
 def load_config():
-    with open('config.yml', 'r', encoding='utf-8') as f:
+    with open('config/config.yml', 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
 class Config:
