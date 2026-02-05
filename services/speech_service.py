@@ -11,16 +11,17 @@ from services.config_service import Config
 logger = logging.getLogger(__name__)
 
 # Directory for saving audio files for analysis
-UPLOADS_DIR = "uploads"
-os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 class SpeechService:
     def __init__(self, config: Config):
         self.config = config
+        self.uploads_dir = config.getBot('uploads_dir')
 
-    def convert_audio(file_name):
+    def convert_audio(self, file_name):
         # Save a copy to uploads directory for analysis
-        uploads_path = os.path.join(UPLOADS_DIR, os.path.basename(file_name))
+        os.makedirs(self.uploads_dir, exist_ok=True)
+
+        uploads_path = os.path.join(self.uploads_dir, os.path.basename(file_name))
         with open(file_name, 'rb') as src, open(uploads_path, 'wb') as dst:
             dst.write(src.read())
         logger.info(f"Saved audio file to: {uploads_path}")
@@ -37,7 +38,7 @@ class SpeechService:
 
         return output_path
 
-    async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def process_audio(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Process audio files and return recognized text"""
         audio = update.message.audio
         file_name = audio.file_name or "audio.mp3"
@@ -66,7 +67,7 @@ class SpeechService:
             raise Exception("Не удалось обработать аудиофайл.")
 
 
-    async def process_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def process_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Process voice messages and return recognized text"""
         voice = update.message.voice
         logger.info("Received voice message")
