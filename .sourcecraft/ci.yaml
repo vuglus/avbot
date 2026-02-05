@@ -5,8 +5,9 @@ on:
         branches: ["master", "main"]
 
 workflows:
+  # Sample workflow. For other options, see: https://sourcecraft.dev/portal/docs/ru/sourcecraft/ci-cd-ref/workflows
   sample-workflow:
-    runs_on: self-hosted # Experimental mode. For other options, see: https://sourcecraft.dev/portal/docs/ru/sourcecraft/ci-cd-ref/workflows
+    runs_on: compute
     tasks:
       - name: sample-task
         cubes:
