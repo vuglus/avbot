@@ -1,3 +1,4 @@
+import os
 import logging
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters
@@ -17,9 +18,12 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
+
 logger = logging.getLogger(__name__)
 
-config = Config(load_config())
+CONFIG_PATH = os.environ.get('CONFIG_PATH', 'config.yml')
+config = Config(load_config(CONFIG_PATH))
+
 # Build and run the bot
 if __name__ == '__main__':
     app = ApplicationBuilder().token(config.getBotToken()).build()

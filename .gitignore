@@ -1,15 +1,14 @@
 .env
 .venv
+config/config.yml
 avbotvenv
 uploads
 transcripts
 __pycache__
 .pytest_cache
 tests/.pytest_cache
-config/
 test.mp3
 test.sh
-config.yml
 dialogs
 .codeassistant
 .vscode

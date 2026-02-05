@@ -18,9 +18,6 @@ class SpeechService:
         self.uploads_dir = config.getBot('uploads_dir')
 
     def convert_audio(self, file_name):
-        # Save a copy to uploads directory for analysis
-        os.makedirs(self.uploads_dir, exist_ok=True)
-
         uploads_path = os.path.join(self.uploads_dir, os.path.basename(file_name))
         with open(file_name, 'rb') as src, open(uploads_path, 'wb') as dst:
             dst.write(src.read())
@@ -54,7 +51,7 @@ class SpeechService:
 
             # Recognize speech using Yandex SpeechKit
             try:
-                transcript = recognize_speech(ogg_path, config.getCloudKey(), config.getCloudFolder())
+                transcript = recognize_speech(ogg_path, self.config.getCloudKey(), self.config.getCloudFolder())
             except Exception as e:
                 logger.error(f"Error recognizing speech: {str(e)}")
                 transcript = "Не удалось распознать речь"
@@ -82,7 +79,7 @@ class SpeechService:
 
             # Recognize speech using Yandex SpeechKit
             try:
-                transcript = recognize_speech(ogg_path, config.getCloudKey(), config.getCloudFolder())
+                transcript = recognize_speech(ogg_path, self.config.getCloudKey(), self.config.getCloudFolder())
             except Exception as e:
                 logger.error(f"Error recognizing speech: {str(e)}")
                 transcript = "Не удалось распознать речь"
