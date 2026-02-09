@@ -9,14 +9,18 @@ workflows:
   sample-workflow:
     runs_on: compute
     tasks:
-      - name: sample-task
+      - name: ci-task
         cubes:
-          - name: sample-cube1
+          - name: setup-and-test
             image: cr.yandex/mirror/library/python:3.13.2-slim
             script:
               - python -m pip install --upgrade pip
               - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
               - pytest -q
+          - name: docker-build
+            image: docker.io/library/docker:latest
+            script:
               - docker build -t avbot:ci .
-              - docker save avbot:ci | gzip > avbot.tar.gz
-
+              - docker push avbot:ci 
+          - name: deploy
+            image: docker.io/library/alpine:latest

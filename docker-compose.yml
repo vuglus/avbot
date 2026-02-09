@@ -11,6 +11,7 @@ services:
       - TIMEZONE_DEFAULT=UTC
     volumes:
       - ./uploads:/uploads
+      - ./data:/data
       - ./dialogs:/dialogs
       - ./config:/config:ro
     restart: no

@@ -19,11 +19,6 @@ class YandexGPTService:
             
             # Initial request to YandexGPT
             response = self.client.request(prompt, tools)
-
-            if response.status != 'completed':
-                self.logger.error(f"Error calling YandexGPT: {response!r}")
-                return f"Ошибка при обращении к YandexGPT: {response.error.message}"
-            
             self.logger.info(f"Success: {response!r}.")
 
             # 1. Ищем tool_call в response.output
@@ -63,7 +58,6 @@ class YandexGPTService:
             return f"Ошибка при обращении к YandexGPT: {str(e)}"
 
     def ask_yandexgpt(self, prompt: str, user_id: int) -> str:
-        """Request to YandexGPT through OpenAI library"""
         # Get index IDs for the user
         index_id = self.tools._get_user_index_id(user_id)
         
@@ -71,28 +65,23 @@ class YandexGPTService:
         return self._make_yandexgpt_request(prompt, tools)
 
     def ask_yandexgpt_with_context(self, prompt: str, dialog_context: list, user_id: int) -> str:
-        """Request to YandexGPT with dialog context through OpenAI library"""
-        try:
-            # For the chat.completions.create API, we need to pass the context as messages
-            messages = []
-            # Add dialog history
-            for msg in dialog_context:
-                role = msg.get("role", "user")
-                text = msg.get("text", "") if "text" in msg else msg.get("content", "")
-                messages.append({"role": role, "content": text})
-            
-            # Add the new user prompt
-            messages.append({"role": "user", "content": prompt})
-            # Get index IDs for the user
-            index_id = self.tools._get_user_index_id(user_id)
-            # Prepare tools
-            tools = self.tools._prepare_tools([index_id])
-            self.logger.info(f"Making YandexGPT request with context: {messages}, tools: {tools}")
-            
-            # Make the request to Yandex Cloud through OpenAI library
-            response = self._make_yandexgpt_request(prompt, tools)
-            
-            return response
-        except Exception as e:
-            self.logger.error(f"Error calling YandexGPT with context: {e!r}")
-            return f"Ошибка при обращении к YandexGPT: {e!r}"
+        # For the chat.completions.create API, we need to pass the context as messages
+        messages = []
+        # Add dialog history
+        for msg in dialog_context:
+            role = msg.get("role", "user")
+            text = msg.get("text", "") if "text" in msg else msg.get("content", "")
+            messages.append({"role": role, "content": text})
+        
+        # Add the new user prompt
+        messages.append({"role": "user", "content": prompt})
+        # Get index IDs for the user
+        index_id = self.tools._get_user_index_id(user_id)
+        # Prepare tools
+        tools = self.tools._prepare_tools([index_id])
+        self.logger.info(f"Making YandexGPT request with context: {messages}, tools: {tools}")
+        
+        # Make the request to Yandex Cloud through OpenAI library
+        response = self._make_yandexgpt_request(prompt, tools)
+        
+        return response

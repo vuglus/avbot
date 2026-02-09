@@ -50,7 +50,7 @@ if __name__ == '__main__':
         ics_handler = ICSHandler(config, application.bot)
         # Start monitoring in the background
         asyncio.create_task(ics_handler.monitor_loop(ics_client))
-    
+      
     print("Бот запущен...")
     # Start ICS monitoring
     app.post_init = start_ics_monitoring

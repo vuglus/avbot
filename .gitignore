@@ -1,6 +1,7 @@
 .env
 .venv
 config/config.yml
+data/
 avbotvenv
 uploads
 transcripts
