@@ -21,7 +21,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CONFIG_PATH = os.environ.get('CONFIG_PATH', 'config.yml')
+CONFIG_PATH = os.environ.get('CONFIG_PATH', './config/config.yml')
 config = Config(load_config(CONFIG_PATH))
 
 # Build and run the bot

@@ -1,26 +1,86 @@
 on:
   push:
-    - workflows: [sample-workflow]
-      filter:
-        branches: ["master", "main"]
+    workflows: [deploy-to-serverless]
+  pull_request:
+    workflows: [deploy-to-serverless]
+
+tokens:
+  SERVICE_CONNECTION:
+    service_connection: services
+    scope: org
 
 workflows:
-  # Sample workflow. For other options, see: https://sourcecraft.dev/portal/docs/ru/sourcecraft/ci-cd-ref/workflows
-  sample-workflow:
-    runs_on: compute
+  deploy-to-serverless:
     tasks:
-      - name: ci-task
+      - name: setup-and-test
+        image: cr.yandex/mirror/library/python:3.13.2-slim
+        script:
+          - python -m pip install --upgrade pip
+          - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          - pytest -q
+      - name: deploy-task
+        env:
+          YC_DOCKER_REGISTRY_URI: cr.yandex/crpnegsi3mo0h8rm5k1p
+          IMAGE_NAME: avbot-image
+          YC_SERVERLESS_CONTAINER_NAME: avbot-container
+          YC_SERVICE_ACCOUNT_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
         cubes:
-          - name: setup-and-test
-            image: cr.yandex/mirror/library/python:3.13.2-slim
+          # Return IAM-token through outputs.IAM_TOKEN
+          - name: get-iam-token
+            env:
+              ID_TOKEN: ${{ tokens.SERVICE_CONNECTION.id_token }}
+              YC_SA_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
+            image: cr.yandex/sourcecraft/yc-iam:latest
+
+          # Example of usage GitHub Actions
+          - name: setup-buildx
+            action: docker/setup-buildx-action@v3.11.1
+
+          - name: login
+            action: docker/login-action@v3.5.0
+            with:
+              registry: ${{env.YC_DOCKER_REGISTRY_URI}}
+              username: iam
+              password: ${{ cubes.get-iam-token.outputs.IAM_TOKEN }}
+
+          - name: build-and-push
+            action: docker/build-push-action@v6.18.0
+            with:
+              context: .
+              file: Dockerfile
+              platforms: linux/amd64
+              tags: |
+                cr.yandex/crpnegsi3mo0h8rm5k1p/avbot-image:latest
+              push: true
+      
+          # Example of usage with Yandex Cloud CLI
+          - name: yc-cli-deploy
+            env:  
+              YC_FOLDER_ID: ${{ tokens.SERVICE_CONNECTION.folder_id }}
+              YC_IAM_TOKEN: ${{ cubes.get-iam-token.outputs.IAM_TOKEN }}
+              YC_DOCKER_REGISTRY_URI: ${{ env.YC_DOCKER_REGISTRY_URI }}
+              IMAGE_NAME: ${{ env.IMAGE_NAME }}
+              YC_SERVERLESS_CONTAINER_NAME: ${{ env.YC_SERVERLESS_CONTAINER_NAME }}
+              YC_SERVICE_ACCOUNT_ID: ${{ tokens.SERVICE_CONNECTION.service_account_id }}
+            image: 
+              name: cr.yandex/sourcecraft/yc-cli:latest
+              entrypoint: ""
             script:
-              - python -m pip install --upgrade pip
-              - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-              - pytest -q
-          - name: docker-build
-            image: docker.io/library/docker:latest
-            script:
-              - docker build -t avbot:ci .
-              - docker push avbot:ci 
-          - name: deploy
-            image: docker.io/library/alpine:latest
+              - |
+                yc config set folder-id $YC_FOLDER_ID
+                yc config set token $YC_IAM_TOKEN
+
+                # Check if the serverless container exists
+                if ! yc serverless container get --name $YC_SERVERLESS_CONTAINER_NAME &>/dev/null; then
+                    echo "Container $YC_SERVERLESS_CONTAINER_NAME does not exist. Creating it..."
+                    
+                    yc serverless container create --name $YC_SERVERLESS_CONTAINER_NAME \
+                                                  --folder-id $YC_FOLDER_ID \
+                                                  --description "AVBot Container created automatically"
+                    
+                    echo "Container $YC_SERVERLESS_CONTAINER_NAME created successfully"
+                else
+                    echo "Container $YC_SERVERLESS_CONTAINER_NAME already exists"
+                fi
+                
+                yc serverless container revision deploy --container-name $YC_SERVERLESS_CONTAINER_NAME --image $YC_DOCKER_REGISTRY_URI/$IMAGE_NAME:latest --service-account-id $YC_SERVICE_ACCOUNT_ID
