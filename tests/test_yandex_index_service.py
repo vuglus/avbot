@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from services.yandex_index_service import YandexIndexService
+from services.dialog_service import DialogService, FileDialogStorage
 from yandex_ai_studio_sdk import AIStudio
 
 
@@ -21,15 +22,21 @@ class TestYandexIndexService:
         return Mock(spec=AIStudio)
 
     @pytest.fixture
-    def index_service(self, mock_sdk):
-        """Create an instance of YandexIndexService with mock SDK"""
-        return YandexIndexService(mock_sdk, "test_folder_id")
+    def mock_dialog_service(self):
+        """Create a mock DialogService"""
+        return Mock(spec=DialogService)
 
-    def test_init(self, mock_sdk):
+    @pytest.fixture
+    def index_service(self, mock_sdk, mock_dialog_service):
+        """Create an instance of YandexIndexService with mock SDK and DialogService"""
+        return YandexIndexService(mock_sdk, "test_folder_id", mock_dialog_service)
+
+    def test_init(self, mock_sdk, mock_dialog_service):
         """Test initialization of YandexIndexService"""
-        service = YandexIndexService(mock_sdk, "test_folder_id")
+        service = YandexIndexService(mock_sdk, "test_folder_id", mock_dialog_service)
         assert service.sdk == mock_sdk
         assert service.folder_id == "test_folder_id"
+        assert service.dialog_service == mock_dialog_service
 
     def test_get_index_name(self, index_service):
         """Test get_index_name method"""
@@ -221,13 +228,14 @@ class TestYandexIndexService:
         # Mock the get_index_by_name method
         index_service.get_index_by_name = Mock(return_value=mock_index)
         
-        # Mock the set_topic_index function from dialog_service
-        with patch('services.yandex_index_service.set_topic_index') as mock_set_topic_index:
-            result = index_service.get_index_id_for_topic(12345, "test_topic")
-            
-            assert result == "topic_index_id"
-            index_service.get_index_by_name.assert_called_with("avbot_index_12345_test_topic")
-            mock_set_topic_index.assert_called_with(12345, "test_topic", "topic_index_id")
+        # Mock the dialog_service set_topic_index method
+        index_service.dialog_service.set_topic_index = Mock()
+        
+        result = index_service.get_index_id_for_topic(12345, "test_topic")
+        
+        assert result == "topic_index_id"
+        index_service.get_index_by_name.assert_called_with("avbot_index_12345_test_topic")
+        index_service.dialog_service.set_topic_index.assert_called_with(12345, "test_topic", "topic_index_id")
 
     def test_get_index_id_for_topic_not_found(self, index_service):
         """Test get_index_id_for_topic when index doesn't exist"""

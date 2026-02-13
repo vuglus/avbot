@@ -2,7 +2,7 @@ import tempfile
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandex_index_service import YandexIndexService
-from services.dialog_service import load_user_dialog
+from services.dialog_service import DialogService, FileDialogStorage
 from services.config_service import Config
 from yandex_ai_studio_sdk import AIStudio
 from handlers.base_handler import BaseHandler
@@ -15,9 +15,9 @@ class DocumentHandler(BaseHandler):
 
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
-        
+        storage = FileDialogStorage()        
         # Получаем текущий топик пользователя
-        dialog_data = load_user_dialog(user_id)
+        dialog_data = storage.load_dialog(user_id)
         current_topic = dialog_data.get("current_topic", "default")
         
         # Инициализируем YandexIndexService

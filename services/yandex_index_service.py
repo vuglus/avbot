@@ -1,6 +1,6 @@
 import os
 import logging
-from services.dialog_service import set_topic_index
+from services.dialog_service import DialogService
 from yandex_ai_studio_sdk import AIStudio
 from yandex_ai_studio_sdk.search_indexes import (
     HybridSearchIndexType,
@@ -12,9 +12,10 @@ from yandex_ai_studio_sdk.search_indexes import (
 logger = logging.getLogger(__name__)
 
 class YandexIndexService:
-    def __init__(self, sdk: AIStudio, folder_id: str):
+    def __init__(self, sdk: AIStudio, folder_id: str, dialog_service: DialogService):
         self.sdk = sdk
         self.folder_id = folder_id
+        self.dialog_service = dialog_service
 
     def _get_or_create_index(self, index_name: str, files) -> str:
         """
@@ -135,8 +136,7 @@ class YandexIndexService:
         index = self.get_index_by_name(index_name)
 
         if index: 
-            set_topic_index(user_id, topic_name, index.id)
+            self.dialog_service.set_topic_index(user_id, topic_name, index.id)
             return index.id
         
         return None
-

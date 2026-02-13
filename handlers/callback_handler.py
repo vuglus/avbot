@@ -1,14 +1,15 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from services.dialog_service import load_user_dialog, save_user_dialog, DEFAULT_TOPIC, set_current_topic
+from services.dialog_service import DialogService
 from handlers.base_handler import BaseHandler
 
 
 class CallbackHandler(BaseHandler):
     """Handle callback queries from inline buttons"""
-    def __init__(self, config):
+    def __init__(self, config, dialog_service: DialogService):
         super().__init__(config)
+        self.dialog_service = dialog_service
     
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
@@ -26,9 +27,9 @@ class CallbackHandler(BaseHandler):
     async def _handle_topic_selection(self, query, user_id: int, topic_name: str):
         """Handle topic selection from inline buttons"""
         # Update the user's current topic using existing function
-        set_current_topic(user_id, topic_name)
+        self.dialog_service.set_current_topic(user_id, topic_name)
         
-        if topic_name == DEFAULT_TOPIC:
+        if topic_name == "default":
             # Show list of all topics when in default mode
             await self._show_topic_list(query, user_id)
         else:
@@ -50,9 +51,9 @@ class CallbackHandler(BaseHandler):
     
     async def _show_topic_list(self, query, user_id: int):
         """Show the list of available topics with inline buttons"""
-        dialog = load_user_dialog(user_id)
+        dialog = self.dialog_service.storage.load_dialog(user_id)
         # Filter out "default" from the topic list
-        topics = [topic for topic in dialog["topics"].keys() if topic != DEFAULT_TOPIC]
+        topics = [topic for topic in dialog["topics"].keys() if topic != "default"]
         
         # Create buttons for each topic
         keyboard = [

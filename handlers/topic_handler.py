@@ -1,12 +1,16 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from services.dialog_service import set_current_topic, load_user_dialog, DEFAULT_TOPIC
+from services.dialog_service import DialogService, FileDialogStorage
 from handlers.base_handler import BaseHandler
 
 
 class TopicHandler(BaseHandler):
     """Handle /topic command"""
+    
+    def __init__(self, config, dialog_service: DialogService):
+        super().__init__(config)
+        self.dialog_service = dialog_service
     
     async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -17,7 +21,7 @@ class TopicHandler(BaseHandler):
         
         if topic_name:
             # Set the current topic
-            response = set_current_topic(user_id, topic_name)
+            response = self.dialog_service.set_current_topic(user_id, topic_name)
             
             if topic_name == "default":
                 # Show list of topics with buttons
@@ -33,9 +37,9 @@ class TopicHandler(BaseHandler):
     
     async def _show_topic_buttons(self, update: Update, user_id: int):
         """Show topic selection buttons"""
-        dialog = load_user_dialog(user_id)
+        dialog = self.dialog_service.storage.load_dialog(user_id)
         # Filter out "default" from the topic list
-        topics = [topic for topic in dialog["topics"].keys() if topic != DEFAULT_TOPIC]
+        topics = [topic for topic in dialog["topics"].keys() if topic != "default"]
         
         # Create buttons for each topic
         keyboard = [

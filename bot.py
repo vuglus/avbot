@@ -12,6 +12,9 @@ from handlers.topic_handler import TopicHandler
 from handlers.callback_handler import CallbackHandler
 from clients.icsclient import ICSClient
 from handlers.icshandler import ICSHandler
+from services.dialog_service import DialogService, FileDialogStorage
+from yandex_ai_studio_sdk import AIStudio
+from services.yandex_index_service import YandexIndexService
 
 # Set up logging
 logging.basicConfig(
@@ -28,13 +31,23 @@ config = Config(load_config(CONFIG_PATH))
 if __name__ == '__main__':
     app = ApplicationBuilder().token(config.getBotToken()).build()
     
+    # Create dialog service instance
+    dialog_service = DialogService(FileDialogStorage())
+    
+    # Create Yandex Index Service instance
+    yandex_sdk = AIStudio(
+        iam_token=config.getYandexIAMToken(),
+        folder_id=config.getYandexFolderId()
+    )
+    index_service = YandexIndexService(yandex_sdk, config.getYandexFolderId(), dialog_service)
+    
     # Create handler instances
     start_handler = StartHandler(config)
-    text_handler = TextHandler(config, YandexGPTService(config))
+    text_handler = TextHandler(config, YandexGPTService(config), dialog_service)
     document_handler = DocumentHandler(config)
     audio_handler = AudioHandler(config, YandexGPTService(config))
-    topic_handler = TopicHandler(config)
-    callback_handler = CallbackHandler(config)
+    topic_handler = TopicHandler(config, dialog_service)
+    callback_handler = CallbackHandler(config, dialog_service)
 
     # Register handlers
     app.add_handler(CommandHandler("start", start_handler.handle_unauthorized))

@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 from services.config_service import Config
+from services.dialog_service import DialogService, FileDialogStorage
 
 mock_config_data = {
             'bot': {
@@ -97,28 +98,25 @@ class TestBotHandlers:
 
     @pytest.mark.asyncio
     async def test_text_handler_success(self, mock_update, mock_context):
-        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
-            patch('handlers.text_handler.add_message_to_topic'), \
-            patch('handlers.text_handler.get_last_messages', return_value=[]):
+        from handlers.text_handler import TextHandler
 
-            from handlers.text_handler import TextHandler
+        mock_yandexgpt_service = Mock()
+        mock_yandexgpt_service.ask_yandexgpt_with_context = Mock(
+            return_value="Test response from YandexGPT"
+        )
+        mock_dialogs_service = Mock()
 
-            mock_yandexgpt_service = Mock()
-            mock_yandexgpt_service.ask_yandexgpt_with_context = Mock(
-                return_value="Test response from YandexGPT"
-            )
+        handler = TextHandler(config, mock_yandexgpt_service, mock_dialogs_service)
 
-            handler = TextHandler(config, mock_yandexgpt_service)
+        mock_update.message.text = "hello"
+        mock_update.effective_user.id = 123
+        mock_update.message.reply_text = AsyncMock()
 
-            mock_update.message.text = "hello"
-            mock_update.effective_user.id = 123
-            mock_update.message.reply_text = AsyncMock()
+        await handler.handle_authorized(mock_update, mock_context)
 
-            await handler.handle_authorized(mock_update, mock_context)
-
-            mock_update.message.reply_text.assert_called_once()
-            args, _ = mock_update.message.reply_text.call_args
-            assert args[0] == "Test response from YandexGPT"
+        mock_update.message.reply_text.assert_called_once()
+        args, _ = mock_update.message.reply_text.call_args
+        assert args[0] == "Test response from YandexGPT"
 
 
     @pytest.mark.asyncio
@@ -134,7 +132,7 @@ class TestBotHandlers:
         )
 
         with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
-            handler = TextHandler(config, mock_yandexgpt_service)
+            handler = TextHandler(config, mock_yandexgpt_service, Mock())
 
             mock_update.message.text = "hello"
             mock_update.effective_user.id = 123
@@ -182,7 +180,8 @@ class TestBotHandlers:
         
         with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
             from handlers.topic_handler import TopicHandler
-            handler = TopicHandler(config)
+            dialogs = DialogService(FileDialogStorage()) 
+            handler = TopicHandler(config, dialogs)
             mock_update.message.reply_text = AsyncMock()
             
             await handler.handle_authorized(mock_update, mock_context)

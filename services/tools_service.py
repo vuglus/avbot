@@ -2,7 +2,7 @@ import logging
 import json
 import requests
 from yandex_ai_studio_sdk import AIStudio
-from services.dialog_service import load_user_dialog, DEFAULT_TOPIC
+from services.dialog_service import FileDialogStorage, DEFAULT_TOPIC
 from services.config_service import Config
 from services.yandex_index_service import YandexIndexService
 
@@ -121,7 +121,9 @@ class ToolService:
         Returns:
             List of unique index IDs preserving order
         """
-        dialog_data = load_user_dialog(user_id)
+        storage = FileDialogStorage()        
+        # Получаем текущий топик пользователя
+        dialog_data = storage.load_dialog(user_id)
         current_topic = dialog_data.get("current_topic", DEFAULT_TOPIC)
         logger.info(f"Current topic: {current_topic}")
 
