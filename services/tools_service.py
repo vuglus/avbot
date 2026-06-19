@@ -2,7 +2,8 @@ import logging
 import json
 import requests
 from yandex_ai_studio_sdk import AIStudio
-from services.dialog_service import FileDialogStorage, DEFAULT_TOPIC
+from services.dialog_service import DialogService
+from storage.file_storage import FileDialogStorage, DEFAULT_TOPIC
 from services.config_service import Config
 from services.yandex_index_service import YandexIndexService
 
@@ -121,7 +122,8 @@ class ToolService:
         Returns:
             List of unique index IDs preserving order
         """
-        storage = FileDialogStorage()        
+        storage = FileDialogStorage()
+        dialogs_service = DialogService(storage)        
         # Получаем текущий топик пользователя
         dialog_data = storage.load_dialog(user_id)
         current_topic = dialog_data.get("current_topic", DEFAULT_TOPIC)
@@ -133,7 +135,7 @@ class ToolService:
 
         try:
             sdk = AIStudio(folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey())
-            index_service = YandexIndexService(sdk, self.config.getCloudFolder())
+            index_service = YandexIndexService(sdk, self.config.getCloudFolder(), storage)
             index_id = index_service.get_index_id_for_topic(user_id, current_topic) or index_id
 
         except Exception as e:

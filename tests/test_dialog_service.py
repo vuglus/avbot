@@ -20,7 +20,7 @@ class TestDialogService:
         original_dir = DIALOGS_DIR
         with tempfile.TemporaryDirectory() as temp_dir:
             # Change DIALOGS_DIR to point to our temp directory
-            with patch('services.dialog_service.DIALOGS_DIR', temp_dir):
+            with patch('storage.file_storage.DIALOGS_DIR', temp_dir):
                 yield temp_dir
 
     @pytest.fixture

@@ -132,7 +132,7 @@ class TestBotHandlers:
             side_effect=Exception("YandexGPT error")
         )
 
-        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
+        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'):
             handler = TextHandler(config, mock_yandexgpt_service, Mock())
 
             mock_update.message.text = "hello"
@@ -155,7 +155,7 @@ class TestBotHandlers:
         mock_update.message.document.file_id = "test_file_id"
         mock_update.message.document.file_name = "test.txt"
         
-        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'), \
+        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'), \
              patch('services.yandex_index_service.YandexIndexService') as mock_index_service:
             # Mock index service
             mock_index_instance = Mock()
@@ -179,7 +179,7 @@ class TestBotHandlers:
         # Mock message text with topic
         mock_update.message.text = "/topic Test topic"
         
-        with patch('services.dialog_service.DIALOGS_DIR', 'dialogs'):
+        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'):
             from handlers.topic_handler import TopicHandler
             dialogs = DialogService(FileDialogStorage()) 
             handler = TopicHandler(config, dialogs)
