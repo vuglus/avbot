@@ -37,7 +37,7 @@ if __name__ == '__main__':
     
     # Create Yandex Index Service instance
     yandex_sdk = AIStudio(
-        iam_token=config.getYandex('key'),
+        auth=config.getCloudKey(),
         folder_id=config.getCloudFolder()
     )
     index_service = YandexIndexService(yandex_sdk, config.getCloudFolder(), dialog_service)
