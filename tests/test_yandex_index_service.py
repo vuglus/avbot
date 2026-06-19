@@ -3,9 +3,9 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from services.yandex_index_service import YandexIndexService
-from services.dialog_service import DialogService, FileDialogStorage
+from services.dialog_service import DialogService
 from yandex_ai_studio_sdk import AIStudio
 
 

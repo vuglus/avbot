@@ -6,7 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 from services.config_service import Config
-from services.dialog_service import DialogService, FileDialogStorage
+from services.dialog_service import DialogService
+from storage.file_storage import FileDialogStorage
 
 mock_config_data = {
             'bot': {

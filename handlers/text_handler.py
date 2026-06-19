@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandexgpt_service import YandexGPTService
 from handlers.base_handler import BaseHandler
-from services.dialog_service import DialogService, FileDialogStorage
+from services.dialog_service import DialogService
 from services.config_service import Config
 
 class TextHandler(BaseHandler):

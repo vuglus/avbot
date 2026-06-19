@@ -1,7 +1,7 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from services.dialog_service import DialogService, FileDialogStorage
+from services.dialog_service import DialogService
 from handlers.base_handler import BaseHandler
 
 

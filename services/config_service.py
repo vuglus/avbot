@@ -16,8 +16,6 @@ class Config:
         return self.get("bot", key, default)
     def getBotToken(self):
         return self.get("bot", 'token')
-    def getBotToken(self):
-        return self.get("bot", 'token')
     def getBotWhitelist(self,default=None):
         whitelist = self.get("bot", 'whitelist', default)
         return { int(uid) for uid in whitelist if str(uid).isdigit()}

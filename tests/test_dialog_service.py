@@ -7,13 +7,9 @@ import os
 import json
 import tempfile
 from unittest.mock import Mock, patch, mock_open
-from services.dialog_service import (
-    DialogService,
-    FileDialogStorage,
-    DIALOGS_DIR,
-    DEFAULT_TOPIC
-)
-
+from services.dialog_service import DialogService
+from storage.abs_storage import DEFAULT_TOPIC
+from storage.file_storage import FileDialogStorage, DIALOGS_DIR
 
 class TestDialogService:
     """Test suite for dialog service functions"""

@@ -2,7 +2,7 @@ import tempfile
 from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandex_index_service import YandexIndexService
-from services.dialog_service import DialogService, FileDialogStorage
+from storage.file_storage import FileDialogStorage
 from services.config_service import Config
 from yandex_ai_studio_sdk import AIStudio
 from handlers.base_handler import BaseHandler

@@ -12,7 +12,8 @@ from handlers.topic_handler import TopicHandler
 from handlers.callback_handler import CallbackHandler
 from clients.icsclient import ICSClient
 from handlers.icshandler import ICSHandler
-from services.dialog_service import DialogService, FileDialogStorage
+from services.dialog_service import DialogService
+from storage.file_storage import FileDialogStorage
 from yandex_ai_studio_sdk import AIStudio
 from services.yandex_index_service import YandexIndexService
 
@@ -36,10 +37,10 @@ if __name__ == '__main__':
     
     # Create Yandex Index Service instance
     yandex_sdk = AIStudio(
-        iam_token=config.getYandexIAMToken(),
-        folder_id=config.getYandexFolderId()
+        iam_token=config.getYandex('key'),
+        folder_id=config.getCloudFolder()
     )
-    index_service = YandexIndexService(yandex_sdk, config.getYandexFolderId(), dialog_service)
+    index_service = YandexIndexService(yandex_sdk, config.getCloudFolder(), dialog_service)
     
     # Create handler instances
     start_handler = StartHandler(config)
