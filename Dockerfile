@@ -38,6 +38,7 @@ EXPOSE 5200
 # Environment variables
 ENV DB_PATH=/data/avbot.db
 ENV CONFIG_PATH=/config/config.yml
+ENV DIALOGS_PATH=/dialogs
 ENV YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
 ENV YDB_DATABASE=/ru-central1/b1g83nrkad3n5ern2vc4/etn488o015sncsav0m01
 

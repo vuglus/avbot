@@ -13,7 +13,7 @@ from handlers.callback_handler import CallbackHandler
 from clients.icsclient import ICSClient
 from handlers.icshandler import ICSHandler
 from services.dialog_service import DialogService
-from storage.file_storage import FileDialogStorage
+from storage.file_storage import FileDialogStorage, DIALOGS_DIR
 from yandex_ai_studio_sdk import AIStudio
 from services.yandex_index_service import YandexIndexService
 
@@ -26,6 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = os.environ.get('CONFIG_PATH', './config/config.yml')
+DIALOGS_PATH = os.environ.get('DIALOGS_PATH', DIALOGS_DIR)
 config = Config(load_config(CONFIG_PATH))
 
 # Build and run the bot
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     app = ApplicationBuilder().token(config.getBotToken()).build()
     
     # Create dialog service instance
-    dialog_service = DialogService(FileDialogStorage())
+    dialog_service = DialogService(FileDialogStorage(DIALOGS_PATH))
     
     # Create Yandex Index Service instance
     yandex_sdk = AIStudio(
