@@ -2,6 +2,9 @@ import os
 import json
 from typing import Dict
 from storage.abs_storage import DialogStorage, DEFAULT_TOPIC
+import logging
+
+logger = logging.getLogger(__name__)
 
 DIALOGS_DIR = "dialogs"
 
