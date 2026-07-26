@@ -16,6 +16,7 @@ from services.dialog_service import DialogService
 from storage.file_storage import FileDialogStorage, DIALOGS_DIR
 from yandex_ai_studio_sdk import AIStudio
 from services.yandex_index_service import YandexIndexService
+from services.api_server import ApiServer
 
 # Set up logging
 logging.basicConfig(
@@ -59,14 +60,29 @@ if __name__ == '__main__':
     app.add_handler(MessageHandler(filters.Document.ALL, document_handler.handle))
     app.add_handler(MessageHandler(filters.AUDIO | filters.VOICE, audio_handler.handle))
 
-    # Initialize and start ICS monitoring
-    async def start_ics_monitoring(application):
+    # Initialize and start background services
+    async def start_background_services(application):
+        # Start ICS monitoring
         ics_client = ICSClient(config)
         ics_handler = ICSHandler(config, application.bot)
-        # Start monitoring in the background
         asyncio.create_task(ics_handler.monitor_loop(ics_client))
-      
+
+        # Start API server
+        api_key = config.get("api", "api_key", "")
+        api_port = config.get("api", "port", 5200)
+        if api_key:
+            api_server = ApiServer(
+                api_key=api_key,
+                bot=application.bot,
+                port=api_port,
+                logger=logger.getChild("api"),
+            )
+            asyncio.create_task(api_server.getTask())
+            logger.info("API server started on port %s", api_port)
+        else:
+            logger.warning("API key not configured — API server not started")
+
     print("Бот запущен...")
-    # Start ICS monitoring
-    app.post_init = start_ics_monitoring
+    # Start background services
+    app.post_init = start_background_services
     app.run_polling()

@@ -5,3 +5,5 @@ pyyaml
 openai
 pytest
 pytest-asyncio
+fastapi
+uvicorn

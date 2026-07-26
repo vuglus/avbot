@@ -1,0 +1,387 @@
+openapi: "3.0.3"
+info:
+  title: AVBot Telegram API
+  description: |
+    HTTP API for sending messages to Telegram via the AVBot.
+
+    All endpoints (except `/health`) require authentication via the `x-api-key` header.
+    The API key is configured in the bot's configuration file.
+
+    Use this API to integrate external services (monitoring, alerts, CI/CD, etc.)
+    with Telegram notifications.
+  version: "1.0.0"
+  contact:
+    name: AVBot Team
+
+servers:
+  - url: http://localhost:5200
+    description: Local development server
+  - url: https://avbot.example.com
+    description: Production server (replace with actual URL)
+
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      description: Returns the current status of the API server.
+      tags:
+        - System
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /send:
+    post:
+      operationId: sendMessage
+      summary: Send a text message
+      description: |
+        Send a text message to a Telegram chat.
+        Supports MarkdownV2 and HTML parse modes.
+      tags:
+        - Messages
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sendPhoto:
+    post:
+      operationId: sendPhoto
+      summary: Send a photo
+      description: Send a photo to a Telegram chat by URL or file_id.
+      tags:
+        - Messages
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendPhotoRequest"
+      responses:
+        "200":
+          description: Photo sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sendDocument:
+    post:
+      operationId: sendDocument
+      summary: Send a document
+      description: Send a document to a Telegram chat by URL or file_id.
+      tags:
+        - Messages
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendDocumentRequest"
+      responses:
+        "200":
+          description: Document sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sendAction:
+    post:
+      operationId: sendAction
+      summary: Send a chat action
+      description: |
+        Send a chat action (typing, upload_photo, record_voice, etc.).
+        Useful for showing the bot "is typing" indicator.
+      tags:
+        - Actions
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendActionRequest"
+      responses:
+        "200":
+          description: Action sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /forwardMessage:
+    post:
+      operationId: forwardMessage
+      summary: Forward a message
+      description: Forward a message from one chat to another.
+      tags:
+        - Messages
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForwardMessageRequest"
+      responses:
+        "200":
+          description: Message forwarded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for authentication. Must match the key configured in the bot.
+
+  schemas:
+    # ── Response schemas ──────────────────────────
+    SuccessResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Operation result
+          example: "sent"
+        message_id:
+          type: integer
+          description: ID of the sent message (if applicable)
+          example: 12345
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: integer
+              description: HTTP status code
+              example: 401
+            message:
+              type: string
+              description: Error description
+              example: "Unauthorized"
+
+    # ── Request schemas ───────────────────────────
+    SendMessageRequest:
+      type: object
+      required:
+        - chat_id
+        - text
+      properties:
+        chat_id:
+          type: integer
+          description: Telegram chat ID (user, group, or channel)
+          example: 123456789
+        text:
+          type: string
+          description: |
+            Message text. Supports MarkdownV2 and HTML formatting
+            when parse_mode is specified.
+          example: "Hello from API!"
+        parse_mode:
+          type: string
+          description: |
+            Text parse mode.
+            - `MarkdownV2` — Telegram MarkdownV2 style
+            - `HTML` — HTML style
+            - `null` — plain text (default)
+          enum:
+            - MarkdownV2
+            - HTML
+          nullable: true
+          example: "MarkdownV2"
+        disable_web_page_preview:
+          type: boolean
+          description: Disable link previews in the message
+          default: false
+          example: true
+        disable_notification:
+          type: boolean
+          description: Send the message silently
+          default: false
+          example: false
+        reply_to_message_id:
+          type: integer
+          description: If set, replies to the specified message
+          nullable: true
+          example: 42
+
+    SendPhotoRequest:
+      type: object
+      required:
+        - chat_id
+        - photo
+      properties:
+        chat_id:
+          type: integer
+          description: Telegram chat ID
+          example: 123456789
+        photo:
+          type: string
+          description: Photo URL or Telegram file_id
+          example: "https://example.com/image.jpg"
+        caption:
+          type: string
+          description: Photo caption
+          nullable: true
+          example: "Check this out!"
+        parse_mode:
+          type: string
+          description: Parse mode for caption (MarkdownV2 or HTML)
+          enum:
+            - MarkdownV2
+            - HTML
+          nullable: true
+
+    SendDocumentRequest:
+      type: object
+      required:
+        - chat_id
+        - document
+      properties:
+        chat_id:
+          type: integer
+          description: Telegram chat ID
+          example: 123456789
+        document:
+          type: string
+          description: Document URL or Telegram file_id
+          example: "https://example.com/report.pdf"
+        caption:
+          type: string
+          description: Document caption
+          nullable: true
+          example: "Monthly report"
+        filename:
+          type: string
+          description: Display filename for the document
+          nullable: true
+          example: "report.pdf"
+
+    SendActionRequest:
+      type: object
+      required:
+        - chat_id
+        - action
+      properties:
+        chat_id:
+          type: integer
+          description: Telegram chat ID
+          example: 123456789
+        action:
+          type: string
+          description: |
+            Type of action to broadcast.
+            - `typing` — for text messages
+            - `upload_photo` — for photos
+            - `record_video` / `upload_video` — for videos
+            - `record_voice` / `upload_voice` — for voice messages
+            - `upload_document` — for documents
+            - `find_location` — for location data
+            - `record_video_note` / `upload_video_note` — for video notes
+          enum:
+            - typing
+            - upload_photo
+            - record_video
+            - upload_video
+            - record_voice
+            - upload_voice
+            - upload_document
+            - find_location
+            - record_video_note
+            - upload_video_note
+          example: "typing"
+
+    ForwardMessageRequest:
+      type: object
+      required:
+        - chat_id
+        - from_chat_id
+        - message_id
+      properties:
+        chat_id:
+          type: integer
+          description: Target Telegram chat ID
+          example: 123456789
+        from_chat_id:
+          type: integer
+          description: Source chat ID (where the original message is)
+          example: 987654321
+        message_id:
+          type: integer
+          description: ID of the message to forward
+          example: 42

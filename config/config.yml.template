@@ -34,6 +34,11 @@ s3:
 mcp:
   b2b_inn_check_url: https://db8dpojigk9h3car4mhs.58zke0qh.mcpgw.serverless.yandexcloud.net/sse
 
+# API server configuration for external integrations
+api:
+  api_key: <your-api-key-here>
+  port: 5200
+
 data:
   ics:
     api_key: <string>
