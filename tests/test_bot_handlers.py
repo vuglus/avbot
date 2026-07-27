@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
@@ -10,23 +11,20 @@ from services.dialog_service import DialogService
 from storage.file_storage import FileDialogStorage
 
 mock_config_data = {
-            'bot': {
-                'whitelist': [12345, 67890],
-                'welcome': 'Welcome to AVBot!'
-            },
-            'yandex': {
-                'system_prompt': 'You are a bot.',
-                'speech_api_key': 'test_speech_api_key',
-                'key': 'test_key',
-            },
-            'ycloud': {
-                'api_key' : 'test_api_key',
-                'folder_id': 'test_folder_id',
-            },
-            }
-    }
+    "bot": {"whitelist": [12345, 67890], "welcome": "Welcome to AVBot!"},
+    "yandex": {
+        "system_prompt": "You are a bot.",
+        "speech_api_key": "test_speech_api_key",
+        "key": "test_key",
+    },
+    "ycloud": {
+        "api_key": "test_api_key",
+        "folder_id": "test_folder_id",
+    },
+}
 
 config = Config(mock_config_data)
+
 
 class TestBotHandlers:
     """Test suite for bot handlers"""
@@ -82,14 +80,14 @@ class TestBotHandlers:
         context = Mock()
         return context
 
-
     @pytest.mark.asyncio
     async def test_start_handler_whitelisted_user(self, mock_update, mock_context):
         from handlers.start_handler import StartHandler
+
         handler = StartHandler(config)
         mock_update.message.reply_text = AsyncMock()
         await handler.handle_unauthorized(mock_update, mock_context)
-        
+
         # Verify welcome message was sent
         mock_update.message.reply_text.assert_called_once_with("Welcome to AVBot!")
 
@@ -115,7 +113,6 @@ class TestBotHandlers:
         args, _ = mock_update.message.reply_text.call_args
         assert args[0] == "Test response from YandexGPT"
 
-
     @pytest.mark.asyncio
     async def test_text_handler_exception(self, mock_update, mock_context):
         """Test text handler when an exception occurs"""
@@ -128,7 +125,7 @@ class TestBotHandlers:
             side_effect=Exception("YandexGPT error")
         )
 
-        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'):
+        with patch("storage.file_storage.DIALOGS_DIR", "dialogs"):
             handler = TextHandler(config, mock_yandexgpt_service, Mock())
 
             mock_update.message.text = "hello"
@@ -150,9 +147,13 @@ class TestBotHandlers:
         mock_update.message.document = Mock()
         mock_update.message.document.file_id = "test_file_id"
         mock_update.message.document.file_name = "test.txt"
-        
-        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'), \
-             patch('services.yandex_index_service.YandexIndexService') as mock_index_service:
+
+        with (
+            patch("storage.file_storage.DIALOGS_DIR", "dialogs"),
+            patch(
+                "services.yandex_index_service.YandexIndexService"
+            ) as mock_index_service,
+        ):
             # Mock index service
             mock_index_instance = Mock()
             mock_index_instance.get_index_name.return_value = "test_index"
@@ -160,11 +161,12 @@ class TestBotHandlers:
             mock_index_service.return_value = mock_index_instance
 
             from handlers.document_handler import DocumentHandler
+
             handler = DocumentHandler(config)
             mock_update.message.reply_text = AsyncMock()
-            
+
             await handler.handle_authorized(mock_update, mock_context)
-            
+
             # Verify success message was sent
             # Note: This test might need adjustment based on actual implementation
             # mock_update.message.reply_text.assert_called_once()
@@ -174,14 +176,15 @@ class TestBotHandlers:
         """Test topic handler with successful execution"""
         # Mock message text with topic
         mock_update.message.text = "/topic Test topic"
-        
-        with patch('storage.file_storage.DIALOGS_DIR', 'dialogs'):
+
+        with patch("storage.file_storage.DIALOGS_DIR", "dialogs"):
             from handlers.topic_handler import TopicHandler
-            dialogs = DialogService(FileDialogStorage()) 
+
+            dialogs = DialogService(FileDialogStorage())
             handler = TopicHandler(config, dialogs)
             mock_update.message.reply_text = AsyncMock()
-            
+
             await handler.handle_authorized(mock_update, mock_context)
-            
+
             # Verify success message was sent
             mock_update.message.reply_text.assert_called_once()
