@@ -23,12 +23,8 @@ mock_config_data = {
                 'api_key' : 'test_api_key',
                 'folder_id': 'test_folder_id',
             },
-            'ics': {
-                'system_prompt': 'You are a calendar bot.',
-                'url': 'https://example.com/calendar.ics',
-                'pulling_interval': 10,
             }
-        }
+    }
 
 config = Config(mock_config_data)
 
@@ -189,40 +185,3 @@ class TestBotHandlers:
             
             # Verify success message was sent
             mock_update.message.reply_text.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_ics_handler_format_changes_no_changes(self):
-        """Test ICS handler format_changes method with no changes"""
-        mock_bot = Mock()        
-        from handlers.icshandler import ICSHandler
-        handler = ICSHandler(config, mock_bot)
-        
-        changes = {
-            'added': [],
-            'removed': [],
-            'modified': []
-        }
-        
-        result = handler.format_changes(changes)
-        assert result == ""
-
-    @pytest.mark.asyncio
-    async def test_ics_handler_format_changes_added_events(self):
-        """Test ICS handler format_changes method with added events"""
-        mock_bot = Mock()
-
-        from handlers.icshandler import ICSHandler
-        handler = ICSHandler(config, mock_bot)
-        
-        changes = {
-            'added': [
-                {'uid': '1', 'title': 'New Event', 'start_datetime': '2023-01-01T10:00:00'},
-                {'uid': '2', 'title': 'Another Event', 'start_datetime': '2023-01-02T15:00:00'}
-            ],
-            'removed': [],
-            'modified': []
-        }
-        
-        result = handler.format_changes(changes)
-        expected = "Добавлено событий: 2\n- New Event (2023-01-01T10:00:00)\n- Another Event (2023-01-02T15:00:00)"
-        assert result == expected
