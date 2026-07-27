@@ -133,7 +133,7 @@ class ApiServer:
     # ── Authentication dependency ──────────────────
     async def _authenticate(
         self,
-        x_api_key: Annotated[str | None, Header(alias="x-api-key")] = None,
+        x_api_key: Annotated[Optional[str], Header(alias="x-api-key")] = None,
     ) -> None:
         """Dependency for x-api-key authentication."""
         if not x_api_key or x_api_key != self.api_key:
