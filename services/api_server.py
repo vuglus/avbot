@@ -1,5 +1,6 @@
 import logging
-import asyncio
+from datetime import datetime
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Annotated, Optional
@@ -7,6 +8,27 @@ from telegram import Bot
 import uvicorn
 from services.config_service import Config
 from services.yandexgpt_service import YandexGPTService
+
+
+EVENT_TEMPLATE_FILE = (
+    Path(__file__).resolve().parent.parent / "skills" / "event_template.md"
+)
+
+MONTHS_RU = [
+    "",
+    "января",
+    "февраля",
+    "марта",
+    "апреля",
+    "мая",
+    "июня",
+    "июля",
+    "августа",
+    "сентября",
+    "октября",
+    "ноября",
+    "декабря",
+]
 
 
 # ──────────────────────────────────────────────
@@ -296,31 +318,14 @@ class ApiServer:
             req: CalendarEventRequest,
             _: Annotated[None, Depends(self._authenticate)],
         ):
-            """Receive calendar events, summarize via LLM, and send to Telegram."""
+            """Receive calendar events, format via template, and send to Telegram."""
             self.logger.info("Received calendar event: summary=%s", req.summary)
 
-            system_prompt = self.config.get(
-                "ics",
-                "system_prompt",
-                "Ты — ассистент, который кратко summarises события календаря.",
-            )
-
-            prompt = (
-                f"{system_prompt}\n\n"
-                f"Событие календаря:\n"
-                f"Название: {req.summary or ''}\n"
-                f"Описание: {req.description or ''}\n"
-                f"Начало: {req.start or ''}\n"
-                f"Конец: {req.end or ''}\n"
-                f"Место: {req.location or ''}\n"
-                f"Календарь: {req.calendar_name or req.calendar_url or ''}\n"
-            )
-
             try:
-                response = await asyncio.to_thread(
-                    self.gpt.ask_yandexgpt, prompt, req.chat_id
+                text = self._format_event(req)
+                await self.bot.send_message(
+                    chat_id=req.chat_id, text=text, parse_mode="Markdown"
                 )
-                await self.bot.send_message(chat_id=req.chat_id, text=response)
                 self.logger.info(
                     "Sent calendar event notification to chat %s", req.chat_id
                 )
@@ -333,6 +338,45 @@ class ApiServer:
                     status_code=500,
                     detail={"code": 500, "message": str(e)},
                 )
+
+    def _format_event(self, req: CalendarEventRequest) -> str:
+        try:
+            template = EVENT_TEMPLATE_FILE.read_text(encoding="utf-8")
+        except Exception:
+            template = "📅 *{calendar_name}*\n\n🔔 *{summary}*\n\n{time_line}{location_line}{description_line}"
+
+        calendar_name = req.calendar_name or req.calendar_url or "Календарь"
+        summary = req.summary or "(без темы)"
+
+        time_line = ""
+        if req.start:
+            dt = self._parse_dt(req.start)
+            if dt:
+                time_line = f"📅 {dt}"
+                if req.end:
+                    dt_end = self._parse_dt(req.end)
+                    if dt_end:
+                        time_line += f" — {dt_end}"
+                time_line += "\n"
+
+        location_line = f"📍 {req.location}\n" if req.location else ""
+        description_line = f"📝 {req.description}\n" if req.description else ""
+
+        return template.format(
+            calendar_name=calendar_name,
+            summary=summary,
+            time_line=time_line,
+            location_line=location_line,
+            description_line=description_line,
+            uid=req.uid or "",
+        )
+
+    def _parse_dt(self, iso_str: str) -> Optional[str]:
+        try:
+            dt = datetime.fromisoformat(iso_str)
+            return f"{dt.day} {MONTHS_RU[dt.month]} {dt.year}, {dt.hour:02d}:{dt.minute:02d}"
+        except Exception:
+            return None
 
     # ── Lifecycle ──────────────────────────────────
     async def run(self):
