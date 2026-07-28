@@ -17,6 +17,7 @@ from handlers.audio_handler import AudioHandler
 from handlers.topic_handler import TopicHandler
 from handlers.callback_handler import CallbackHandler
 from handlers.calendar_handler import CalendarHandler
+from handlers.calendars_handler import CalendarsHandler
 from services.dialog_service import DialogService
 from storage.file_storage import FileDialogStorage, DIALOGS_DIR
 from yandex_ai_studio_sdk import AIStudio
@@ -55,11 +56,13 @@ if __name__ == "__main__":
     topic_handler = TopicHandler(config, dialog_service)
     callback_handler = CallbackHandler(config, dialog_service)
     calendar_handler = CalendarHandler(config)
+    calendars_handler = CalendarsHandler(config)
 
     # Register handlers
     app.add_handler(CommandHandler("start", start_handler.handle_unauthorized))
     app.add_handler(CommandHandler("topic", topic_handler.handle))
     app.add_handler(CommandHandler("calendar", calendar_handler.handle))
+    app.add_handler(CommandHandler("calendars", calendars_handler.handle))
     app.add_handler(CallbackQueryHandler(callback_handler.handle))
     app.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler.handle)

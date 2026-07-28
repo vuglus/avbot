@@ -14,6 +14,7 @@ Telegram bot (python-telegram-bot) + FastAPI server for external integrations.
 | `start_handler.py` | `/start` | No | Sends welcome message |
 | `topic_handler.py` | `/topic` | Yes | Topic management |
 | `calendar_handler.py` | `/calendar <client_type> <url>` | Yes | Registers calendar via POST to ICS service |
+| `calendars_handler.py` | `/calendars [del <id>]` `/calendars edit <id> <field> <value>` `/calendars event <id> <summary>` | Yes | List, delete, edit (name/url/client_type/timezone), or create events in calendars |
 | `text_handler.py` | Any text (non-command) | Yes | GPT response |
 | `document_handler.py` | Document upload | Yes | Document processing |
 | `audio_handler.py` | Audio/voice | Yes | Speech processing |
@@ -22,7 +23,7 @@ Telegram bot (python-telegram-bot) + FastAPI server for external integrations.
 ### Clients (in `clients/`)
 | File | Description |
 |------|-------------|
-| `icsclient.py` | HTTP client for ICS/calendar service. POST `/calendars` for registration (`X-Auth-Token` header) |
+| `icsclient.py` | HTTP client for ICS/calendar service. POST `/calendars` for registration (`X-Auth-Token` header). GET `/calendars` to list, DELETE `/calendars/{id}` to delete (`api_key` query param). PUT `/calendars/{id}` to update fields (name/url/client_type/timezone). POST `/calendars/{id}/events` to create events. |
 
 ### Services (in `services/`)
 | File | Description |
@@ -87,6 +88,14 @@ data:
 3. POSTs to `{ics.url}/calendars` with `X-Auth-Token` header and JSON body `{chat_id, chat_type, client_type, url}`
 4. Returns success/failure message to user
 
+## Calendar List/Delete Flow
+1. User sends `/calendars` — `calendars_handler.py` calls GET `{ics.url}/calendars?api_key=...&user_id=...`, returns list of calendars with id, name, type, url, timezone
+2. User sends `/calendars del <id>` — calls DELETE `{ics.url}/calendars/{id}?api_key=...&user_id=...`, returns success/failure
+
+## Calendar Edit/Event Flows
+1. Edit: `/calendars edit <id> <field> <value>` — PUT `{ics.url}/calendars/{id}?api_key=...&user_id=...` с телом `{field: value}`. Поля: name, url, client_type, timezone.
+2. Event: `/calendars event <id> <summary> [| start [| end]]` — POST `{ics.url}/calendars/{id}/events?api_key=...&user_id=...`. Если start не указан — all_day=true на сегодня.
+
 ## Calendar Event Endpoint (`POST /calendar/event`)
 External services send calendar events to `/calendar/event`. Endpoint accepts `CalendarEventRequest` with `chat_id`, feeds event data + `ics.system_prompt` to YandexGPT via `asyncio.to_thread`, sends result to Telegram `chat_id`.
 
@@ -125,4 +134,6 @@ Tests in `tests/` directory. Run with: (check test framework in project)
 - Config path: `CONFIG_PATH` env var or `./config/config.yml`
 - Dialogs storage: `DIALOGS_PATH` env var or default in `storage/`
 - API server auth header: `x-api-key`
-- ICS service auth header: `X-Auth-Token`
+- ICS service auth header: `X-Auth-Token` (POST), query param `api_key` (GET/DELETE)
+- Calendar skill file: `skills/calendar.md` — справка по командам календаря для LLM и для команды `/calendars help`
+- Help text для `/calendars` читается из `skills/calendar.md` через `Path(__file__).resolve()` (корректно в Docker)
