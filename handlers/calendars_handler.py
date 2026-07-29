@@ -7,10 +7,12 @@ from telegram.ext import ContextTypes
 from handlers.base_handler import BaseHandler
 from services.config_service import Config
 from clients.icsclient import ICSClient
+import md2tgmd
 
 
 EDITABLE_FIELDS = {"name", "url", "client_type", "timezone"}
 SKILL_FILE = Path(__file__).resolve().parent.parent / "skills" / "calendar.md"
+INFO_FILE = Path(__file__).resolve().parent.parent / "skills" / "calendar_info.md"
 
 
 class CalendarsHandler(BaseHandler):
@@ -39,6 +41,10 @@ class CalendarsHandler(BaseHandler):
             await self._edit_calendar(update, args[1], args[2], "", chat_id)
         elif sub == "event" and len(args) >= 3:
             await self._create_event(update, args[1], " ".join(args[2:]), chat_id)
+        elif sub == "add":
+            await self._add_calendar(update, args[1:], chat_id)
+        elif sub == "info":
+            await self._send_info(update)
         elif sub == "help":
             await self._send_help(update)
         else:
@@ -47,17 +53,65 @@ class CalendarsHandler(BaseHandler):
     async def _send_help(self, update: Update):
         try:
             text = SKILL_FILE.read_text(encoding="utf-8")
-            await update.message.reply_text(text, parse_mode="Markdown")
+            await update.message.reply_text(
+                md2tgmd.escape(text), parse_mode="MarkdownV2"
+            )
         except Exception as e:
             self.logger.error(f"Failed to read skill file: {e}")
             await update.message.reply_text(
                 "Использование:\n"
                 "/calendars — список календарей\n"
+                "/calendars add <client_type> <url> [название] — добавить календарь\n"
+                "/calendars info — инструкция для Яндекс.Календаря\n"
                 "/calendars del <id> — удалить календарь\n"
                 "/calendars edit <id> <field> <value> — изменить поле (name, url, client_type, timezone)\n"
                 "/calendars event <id> <summary> — создать событие на сегодня\n"
                 "/calendars event <id> <summary> | <start> — с указанием начала (ISO)\n"
                 "/calendars event <id> <summary> | <start> | <end> — с началом и концом",
+            )
+
+    async def _send_info(self, update: Update):
+        try:
+            text = INFO_FILE.read_text(encoding="utf-8")
+            await update.message.reply_text(
+                md2tgmd.escape(text), parse_mode="MarkdownV2"
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to read info file: {e}")
+            await update.message.reply_text(
+                "Инструкция временно недоступна. Попробуйте позже."
+            )
+
+    async def _add_calendar(self, update: Update, args: list, chat_id: str):
+        if len(args) < 2:
+            await update.message.reply_text(
+                "Использование: /calendars add <client_type> <url> [название]\n\n"
+                "Пример: /calendars add caldav https://user@yandex.ru:пароль@caldav.yandex.ru/calendars/login/events-123/ Мой календарь\n\n"
+                "Подробнее: /calendars info"
+            )
+            return
+
+        client_type = args[0]
+        url = args[1]
+        name = " ".join(args[2:]) if len(args) > 2 else ""
+        chat_type = "tg"
+
+        success = self.ics_client.register_calendar(
+            chat_id=chat_id,
+            chat_type=chat_type,
+            client_type=client_type,
+            url=url,
+            name=name,
+        )
+
+        if success:
+            msg = f"Календарь успешно добавлен!\nТип: {client_type}\nURL: {url}"
+            if name:
+                msg += f"\nИмя: {name}"
+            await update.message.reply_text(msg)
+        else:
+            await update.message.reply_text(
+                "Не удалось добавить календарь. Попробуйте позже."
             )
 
     async def _list_calendars(self, update: Update, chat_id: str):

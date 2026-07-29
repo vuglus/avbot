@@ -3,15 +3,16 @@
 ## Команды Telegram
 
 ### Добавить календарь
-`/calendar <client_type> <url> [название]`
+`/calendars add <client_type> <url> [название]`
 - `client_type` — тип календаря (например `caldav`)
 - `url` — URL календаря
 - `название` — опционально, имя календаря
-- `chat_id` и `chat_type` заполняются автоматически
+
+**Как получить URL для Яндекс.Календаря:** `/calendars info`
 
 **Примеры:**
-- `/calendar caldav /calendars/__uids__/abc123/calendar`
-- `/calendar caldav /calendars/__uids__/abc123/calendar Мой календарь`
+- `/calendars add caldav https://user@yandex.ru:пароль@caldav.yandex.ru/calendars/login/events-123/`
+- `/calendars add caldav https://user@yandex.ru:пароль@caldav.yandex.ru/calendars/login/events-123/ Мой календарь`
 
 ### Список календарей
 `/calendars`
@@ -48,7 +49,7 @@
   "chat_id": "12345",
   "chat_type": "tg",
   "client_type": "caldav",
-  "url": "/calendars/__uids__/abc123/calendar"
+  "url": "https://user@yandex.ru:пароль@caldav.yandex.ru/calendars/login/events-123/"
 }
 ```
 Заголовок: `X-Auth-Token: <api_key>`

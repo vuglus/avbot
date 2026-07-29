@@ -1,5 +1,6 @@
 import logging
 import json
+from pathlib import Path
 import requests
 from yandex_ai_studio_sdk import AIStudio
 from services.dialog_service import DialogService
@@ -21,7 +22,18 @@ class ToolService:
         """Route tool calls to appropriate handler."""
         if tool_name in ("add_calendar_event", "list_calendars"):
             return self._call_calendar_tool(tool_name, args, user_id)
+        if tool_name == "get_help":
+            return self._call_help_tool(args)
         return self.call_mcp_tool(tool_name, args)
+
+    def _call_help_tool(self, args: dict) -> dict:
+        help_file = Path(__file__).resolve().parent.parent / "skills" / "calendar.md"
+        try:
+            text = help_file.read_text(encoding="utf-8")
+            return {"help_text": text}
+        except Exception as e:
+            logger.error(f"Error reading help file: {e}")
+            return {"help_text": "Справка временно недоступна."}
 
     def _call_calendar_tool(
         self, tool_name: str, args: dict, user_id: int = None
@@ -195,6 +207,16 @@ class ToolService:
                     },
                 },
             ]
+        )
+
+        # Add help tool
+        tools.append(
+            {
+                "type": "function",
+                "name": "get_help",
+                "description": "Показать справку по управлению календарями (команды, API, примеры)",
+                "parameters": {"type": "object", "properties": {}, "required": []},
+            }
         )
 
         # # Add MCP tools

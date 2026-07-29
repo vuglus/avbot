@@ -7,3 +7,4 @@ pytest
 pytest-asyncio
 fastapi
 uvicorn
+md2tgmd

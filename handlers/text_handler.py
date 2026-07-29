@@ -4,33 +4,50 @@ from services.yandexgpt_service import YandexGPTService
 from handlers.base_handler import BaseHandler
 from services.dialog_service import DialogService
 from services.config_service import Config
+import md2tgmd
+
 
 class TextHandler(BaseHandler):
     """Handle text messages"""
-    def __init__(self, config: Config, gpt: YandexGPTService, dialog_service: DialogService):
+
+    def __init__(
+        self, config: Config, gpt: YandexGPTService, dialog_service: DialogService
+    ):
         super().__init__(config)
         self.gpt = gpt
         self.dialog_service = dialog_service
-    
-    async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    async def handle_authorized(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         user_id = update.effective_user.id
         user_input = update.message.text or update.message.caption or ""
         self.logger.info(f"Received text message: {user_input}")
-        
+
         # Add user message to dialog history
-        self.dialog_service.add_message_to_topic(user_id, {"role": "user", "text": user_input})
-        
+        self.dialog_service.add_message_to_topic(
+            user_id, {"role": "user", "text": user_input}
+        )
+
         # Get last 15 messages for context
         dialog_context = self.dialog_service.get_last_messages(user_id, 15)
-        
+
         try:
-            reply = self.gpt.ask_yandexgpt_with_context(user_input, dialog_context, user_id)
+            reply = self.gpt.ask_yandexgpt_with_context(
+                user_input, dialog_context, user_id
+            )
             self.logger.info("TextHandler received response from YandexGPT")
-            
+
             # Add assistant message to dialog history
-            self.dialog_service.add_message_to_topic(user_id, {"role": "assistant", "text": reply})
-            
-            await update.message.reply_text(reply)
+            self.dialog_service.add_message_to_topic(
+                user_id, {"role": "assistant", "text": reply}
+            )
+
+            await update.message.reply_text(
+                md2tgmd.escape(reply), parse_mode="MarkdownV2"
+            )
         except Exception as e:
-            self.logger.error(f"Error calling YandexGPT: {str(e)} user_input: {user_input} dialog_context: {dialog_context}")
+            self.logger.error(
+                f"Error calling YandexGPT: {str(e)} user_input: {user_input} dialog_context: {dialog_context}"
+            )
             await update.message.reply_text(f"Ошибка: {str(e)}")

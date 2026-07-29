@@ -83,8 +83,8 @@ data:
 1. **API Server** — FastAPI on configurable port, auth via `x-api-key` header
 
 ## Calendar Registration Flow
-1. User sends: `/calendar caldav /calendars/__uids__/abc123/calendar`
-2. `calendar_handler.py` extracts `client_type` and `url` from args, fills `chat_id` (from Telegram update) and `chat_type` ("tg")
+1. User sends: `/calendars add caldav https://user@yandex.ru:пароль@caldav.yandex.ru/calendars/login/events-123/`
+2. `calendars_handler.py` extracts `client_type` and `url` from args, fills `chat_id` (from Telegram update) and `chat_type` ("tg")
 3. POSTs to `{ics.url}/calendars` with `X-Auth-Token` header and JSON body `{chat_id, chat_type, client_type, url}`
 4. Returns success/failure message to user
 
