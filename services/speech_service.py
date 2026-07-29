@@ -12,25 +12,28 @@ logger = logging.getLogger(__name__)
 
 # Directory for saving audio files for analysis
 
+
 class SpeechService:
     def __init__(self, config: Config):
         self.config = config
-        self.uploads_dir = config.getBot('uploads_dir')
+        self.uploads_dir = config.getBot("uploads_dir") or tempfile.gettempdir()
 
     def convert_audio(self, file_name):
         uploads_path = os.path.join(self.uploads_dir, os.path.basename(file_name))
-        with open(file_name, 'rb') as src, open(uploads_path, 'wb') as dst:
+        with open(file_name, "rb") as src, open(uploads_path, "wb") as dst:
             dst.write(src.read())
         logger.info(f"Saved audio file to: {uploads_path}")
 
-        if uploads_path.endswith('.oga'):
+        if uploads_path.endswith(".oga"):
             return uploads_path
 
         output_path = uploads_path + ".ogg"
 
         logger.info(f"convert audio file from {uploads_path} to: {output_path}")
         """Convert audio file to OGG format with required specifications"""
-        sound = AudioSegment.from_file(uploads_path).set_frame_rate(16000).set_channels(1)
+        sound = (
+            AudioSegment.from_file(uploads_path).set_frame_rate(16000).set_channels(1)
+        )
         sound.export(output_path, format="ogg")
 
         return output_path
@@ -51,7 +54,9 @@ class SpeechService:
 
             # Recognize speech using Yandex SpeechKit
             try:
-                transcript = recognize_speech(ogg_path, self.config.getCloudKey(), self.config.getCloudFolder())
+                transcript = recognize_speech(
+                    ogg_path, self.config.getCloudKey(), self.config.getCloudFolder()
+                )
             except Exception as e:
                 logger.error(f"Error recognizing speech: {str(e)}")
                 transcript = "Не удалось распознать речь"
@@ -62,7 +67,6 @@ class SpeechService:
         except Exception as e:
             logger.error(f"Error processing audio: {str(e)}")
             raise Exception("Не удалось обработать аудиофайл.")
-
 
     async def process_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Process voice messages and return recognized text"""
@@ -79,7 +83,9 @@ class SpeechService:
 
             # Recognize speech using Yandex SpeechKit
             try:
-                transcript = recognize_speech(ogg_path, self.config.getCloudKey(), self.config.getCloudFolder())
+                transcript = recognize_speech(
+                    ogg_path, self.config.getCloudKey(), self.config.getCloudFolder()
+                )
             except Exception as e:
                 logger.error(f"Error recognizing speech: {str(e)}")
                 transcript = "Не удалось распознать речь"

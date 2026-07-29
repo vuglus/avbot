@@ -345,7 +345,7 @@ class ApiServer:
         except Exception:
             template = "📅 *{calendar_name}*\n\n🔔 *{summary}*\n\n{time_line}{location_line}{description_line}"
 
-        calendar_name = req.calendar_name or req.calendar_url or "Календарь"
+        calendar_name = req.calendar_name or req.calendar_id or "Календарь"
         summary = req.summary or "(без темы)"
 
         time_line = ""

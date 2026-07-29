@@ -3,28 +3,37 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from services.yandex_index_service import YandexIndexService
 from storage.file_storage import FileDialogStorage
+from services.dialog_service import DialogService
 from services.config_service import Config
 from yandex_ai_studio_sdk import AIStudio
 from handlers.base_handler import BaseHandler
 
+
 class DocumentHandler(BaseHandler):
     """Handle document attachments"""
+
     def __init__(self, config: Config):
         super().__init__(config)
         self.config = config
 
-    async def handle_authorized(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_authorized(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         user_id = update.effective_user.id
-        storage = FileDialogStorage()        
+        storage = FileDialogStorage()
         # Получаем текущий топик пользователя
         dialog_data = storage.load_dialog(user_id)
         current_topic = dialog_data.get("current_topic", "default")
-        
+
         # Инициализируем YandexIndexService
-        sdk = AIStudio(folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey())
-        index_service = YandexIndexService(sdk, self.config.getCloudFolder())
+        sdk = AIStudio(
+            folder_id=self.config.getCloudFolder(), auth=self.config.getCloudKey()
+        )
+        index_service = YandexIndexService(
+            sdk, self.config.getCloudFolder(), DialogService(storage)
+        )
         index_name = index_service.get_index_name(user_id, current_topic)
-        
+
         self.logger.info(f"Using index name: {index_name}")
         user_input = update.message.text or update.message.caption or ""
         self.logger.info(f"Received message with document: {user_input}")
@@ -33,7 +42,9 @@ class DocumentHandler(BaseHandler):
         if update.message.document:
             document = update.message.document
             file_name = document.file_name.lower()
-            self.logger.info(f"Detected file: {file_name} Document type: {update.message.document.mime_type}")
+            self.logger.info(
+                f"Detected file: {file_name} Document type: {update.message.document.mime_type}"
+            )
 
             try:
                 file = await document.get_file()
@@ -48,12 +59,16 @@ class DocumentHandler(BaseHandler):
             # Загружаем файл в индекс
             try:
                 index_service.upload_file_to_index(temp_path, file_name, index_name)
-                self.logger.info(f"File uploaded and indexed successfully to {index_name}")
+                self.logger.info(
+                    f"File uploaded and indexed successfully to {index_name}"
+                )
             except Exception as e:
                 self.logger.error(f"Error indexing file: {str(e)}")
                 # Не прерываем основной поток, просто логируем ошибку
                 return
-        
+
         # После успешной индексации файла отвечаем пользователю
-        await update.message.reply_text(f"Файл: {file_name} успешно загружен и обработан для индексации.")
+        await update.message.reply_text(
+            f"Файл: {file_name} успешно загружен и обработан для индексации."
+        )
         return
