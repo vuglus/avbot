@@ -1,7 +1,6 @@
 import logging
 import json
 from pathlib import Path
-import requests
 from yandex_ai_studio_sdk import AIStudio
 from services.dialog_service import DialogService
 from storage.file_storage import FileDialogStorage, DEFAULT_TOPIC
@@ -20,26 +19,23 @@ class ToolService:
 
     def call_tool(self, tool_name: str, args: dict, user_id: int = None) -> dict:
         """Route tool calls to appropriate handler."""
-        if tool_name in ("add_calendar_event", "list_calendars"):
-            return self._call_calendar_tool(tool_name, args, user_id)
-        if tool_name == "get_help":
-            return self._call_help_tool(args)
-        return self.call_mcp_tool(tool_name, args)
-
-    def _call_help_tool(self, args: dict) -> dict:
-        help_file = Path(__file__).resolve().parent.parent / "skills" / "calendar.md"
-        try:
-            text = help_file.read_text(encoding="utf-8")
-            return {"help_text": text}
-        except Exception as e:
-            logger.error(f"Error reading help file: {e}")
-            return {"help_text": "Справка временно недоступна."}
+        return self._call_calendar_tool(tool_name, args, user_id)
 
     def _call_calendar_tool(
         self, tool_name: str, args: dict, user_id: int = None
     ) -> dict:
         """Handle calendar-related tool calls."""
         try:
+            if tool_name == "get_help":
+                help_file = (
+                    Path(__file__).resolve().parent.parent / "skills" / "calendar.md"
+                )
+                try:
+                    text = help_file.read_text(encoding="utf-8")
+                    return {"help_text": text}
+                except Exception as e:
+                    logger.error(f"Error reading help file: {e}")
+                    return {"help_text": "Справка временно недоступна."}
             if tool_name == "list_calendars":
                 calendars = self.ics.get_calendars(str(user_id))
                 all_calendars = calendars or []
@@ -86,68 +82,10 @@ class ToolService:
             logger.error(f"Calendar tool error: {e}")
             return {"error": str(e)}
 
-    def call_mcp_tool(self, tool_name: str, args: dict) -> dict:
-        """
-        Call MCP tool via SSE JSON-RPC.
-        tool_name: "scoring_post" or "briefReport_post"
-        args: dict of tool parameters, e.g. {"query_inn": "7733215614"}
-        """
-        try:
-            logger.info(f"Calling MCP tool via SSE: {tool_name} with args: {args}")
-
-            # Prepare JSON-RPC payload
-            payload = {"jsonrpc": "2.0", "method": tool_name, "params": args, "id": 1}
-
-            # SSE expects GET with headers for key
-            headers = {
-                "Content-Type": "application/json",
-            }
-
-            # SSE через requests + sseclient
-            with requests.get(
-                self.config.get("mcp", "b2b_inn_check_url"),
-                headers=headers,
-                stream=True,
-            ) as response:
-                client = sseclient.SSEClient(response)
-
-                # Отправляем команду (через POST к /sse, иногда нужно в SSE подключении писать JSON-RPC, зависит от MCP)
-                # Здесь MCP обычно ждёт события типа 'message' с JSON payload
-                # Но в публичном SDK это скрыто, поэтому ниже пример "прослушки" ответа
-                for event in client.events():
-                    try:
-                        data = json.loads(event.data)
-                        # Ищем ответ с нужным id
-                        if data.get("id") == 1:
-                            logger.info(
-                                f"MCP tool {tool_name} returned: {data.get('result')}"
-                            )
-                            return data.get("result")
-                    except json.JSONDecodeError:
-                        continue
-
-            return {"error": "No response from MCP tool"}
-
-        except Exception as e:
-            logger.error(f"Error calling MCP tool {tool_name}: {str(e)}")
-            return {"error": str(e)}
-
     def _prepare_tools(self, index_keys: list):
         """Prepare tools for YandexGPT request"""
         # Start with the base tools
         tools = []
-
-        # Add file search tools if we have index keys
-        if index_keys:
-            # Filter out any None or empty values
-            valid_index_keys = [key for key in index_keys if key]
-            if valid_index_keys:
-                tools.append(
-                    {
-                        "type": "file_search",
-                        "vector_store_ids": valid_index_keys,
-                    }
-                )
 
         # Add web search tool
         tools.append(
@@ -158,9 +96,26 @@ class ToolService:
             }
         )
 
+        # Add file search tools if we have index keys
+        if index_keys:
+            valid_index_keys = [key for key in index_keys if key]
+            if valid_index_keys:
+                tools.append(
+                    {
+                        "type": "file_search",
+                        "vector_store_ids": valid_index_keys,
+                    }
+                )
+
         # Add calendar tools
         tools.extend(
             [
+                {
+                    "type": "function",
+                    "name": "get_help",
+                    "description": "Показать справку по управлению календарями (команды, API, примеры)",
+                    "parameters": {"type": "object", "properties": {}, "required": []},
+                },
                 {
                     "type": "function",
                     "name": "list_calendars",
@@ -208,52 +163,6 @@ class ToolService:
                 },
             ]
         )
-
-        # Add help tool
-        tools.append(
-            {
-                "type": "function",
-                "name": "get_help",
-                "description": "Показать справку по управлению календарями (команды, API, примеры)",
-                "parameters": {"type": "object", "properties": {}, "required": []},
-            }
-        )
-
-        # # Add MCP tools
-        # tools.extend([
-        #     {
-        #         "type": "function",
-        #         "function": {
-        #             "name": "scoring_post",
-        #             "description": "Скоринг организации по ИНН",
-        #             "parameters": {
-        #                 "type": "object",
-        #                 "properties": {
-        #                     "query_inn": {
-        #                         "type": "string",
-        #                         "description": "ИНН организации (можно указать до 100 ИНН-ов через запятую). Обязательный, если не указан ОГРН"
-        #                     }
-        #                 },
-        #                 "required": ["query_inn"]
-        #             }
-        #         }
-        #     },
-        #     {
-        #         "type": "function",
-        #         "function": {
-        #             "name": "briefReport_post",
-        #             "description": "Краткий отчет по организации",
-        #             "parameters": {
-        #                 "type": "object",
-        #                 "properties": {
-        #                     "query_inn": {"type": "string"}
-        #                 },
-        #                 "required": ["query_inn"]
-        #             },
-        #             "strict": True
-        #         }
-        #     }
-        # ])
 
         return tools
 
